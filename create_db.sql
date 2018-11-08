@@ -136,5 +136,5 @@ create table player_lifetime_stats (
     , weeklyWins int not null
     , winPoints int not null
     , wins int not null
-    , foreign key (player_id) references players(player_id)
+    , foreign key (player_id) references players(player_id) on update cascade on delete cascade
 );
