@@ -32,14 +32,21 @@ def get_players(player_names=player_names, headers=headers):
 p = get_players()
 
 #%%
-p
-#%%
 
 import mysql.connector as mariadb
-db_user = config['db_user']
+db_user = config['db_un']
 db_pw = config['db_pw']
 db_host = config['db_host']
 db_name = config['db_name']
 
 mdb = mariadb.connect(user=db_user, password=db_pw, database=db_name)
 cursor = mdb.cursor()
+
+for player in p['data'][0]:
+    cursor.execute('insert into players\
+                    values (\
+                        {0},\
+                        {1},\
+                        {2});'.format(p['id'], p['name'], p['attributes']['shardId']))
+mdb.commit()
+mdb.close()

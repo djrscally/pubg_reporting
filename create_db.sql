@@ -1,6 +1,6 @@
 -- -------------------------------------------------------------------
--- This script builds a reporting database to hold data fetched from 
--- the pubg API, which can then be used with data analysis tools to 
+-- This script builds a reporting database to hold data fetched from
+-- the pubg API, which can then be used with data analysis tools to
 -- make pretty graphs and win nerd/gamer cred.
 --
 -- Author: djrscally
@@ -15,18 +15,22 @@ create database if not exists pubg_reporting;
 
 use pubg_reporting;
 
--- create the players table in the first instance
+-- players table, which is fairly minimal
 create table players (
 	player_id nvarchar(255) not null primary key
     , player_name nvarchar(255) not null
     , shard_id nvarchar(255)
 );
 
+-- seasons table, also minimal
 create table seasons (
 	season_id nvarchar(255) not null primary key
     , is_current_season bool not null
     , is_off_season bool not null
 );
+
+-- matches table, details about the actual rounds played (although
+-- not any stats which is weird)
 
 create table matches (
 	match_id nvarchar(255) not null primary key
@@ -39,7 +43,10 @@ create table matches (
     , seasonState nvarchar(255) not null
     , shardId nvarchar(255) not null
 );
--- test update
+
+-- relational table tying players to the matches they have been
+-- in, but again no stats.
+
 create table player_matches (
 	player_match_id int not null primary key
     , player_id nvarchar(255) not null
@@ -48,6 +55,8 @@ create table player_matches (
     , foreign key (match_id) references matches(match_id) on update cascade on delete cascade
 );
 
+-- relational table tying matches to the season that they're in
+
 create table season_matches (
 	season_match_id int not null primary key
     , season_id nvarchar(255) not null
@@ -55,6 +64,8 @@ create table season_matches (
     , foreign key (season_id) references seasons(season_id) on update cascade on delete cascade
     , foreign key (match_id) references matches(match_id) on update cascade on delete cascade
 );
+
+-- a players stats for a season
 
 create table player_season_stats (
 	season_stats_id int not null primary key
@@ -97,6 +108,8 @@ create table player_season_stats (
     , wins int not null
     , foreign key (season_id) references seasons(season_id) on update cascade on delete cascade
 );
+
+-- a players stats in all seasons combined.
 
 create table player_lifetime_stats (
 	lifetime_stats_id int not null primary key
