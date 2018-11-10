@@ -1,5 +1,6 @@
 import requests
 import json
+import mysql.connector as mysql
 
 # Load the config file
 config = json.load(open('config.json'))
@@ -8,8 +9,8 @@ config = json.load(open('config.json'))
 # the base URL for the api
 
 headers = {
-    'Authorization':config['api_key'],
-    'Accept':'application/vnd.api+json'
+    'Authorization': config['api_key'],
+    'Accept': 'application/vnd.api+json'
 }
 
 base_url = 'https://api.pubg.com/shards/{0}'.format(config['shard'])
@@ -17,36 +18,56 @@ base_url = 'https://api.pubg.com/shards/{0}'.format(config['shard'])
 # And make an iterator of the player names to search
 player_names = config['players']
 
+# Now build the connection to the database for the insert statements
+
+mdb = mysql.connect(
+    host=config['db_host'],
+    user=config['db_un'],
+    password=config['db_pw'],
+    database=config['db_name']
+    )
+
+cursor = mdb.cursor()
+
+
 def get_players(player_names=player_names, headers=headers):
+
     module = '/players'
-    payload = {'filter[playerNames]':player_names
+    payload = {'filter[playerNames]': player_names
     }
-    r = requests.get(base_url + module,
-                    headers=headers,
-                    params=payload)
+
+    r = requests.get(
+        base_url + module,
+        headers=headers,
+        params=payload
+        )
 
     return r.json()
 
-#%%
 
-p = get_players()
+def insert_players(players, cursor):
 
-#%%
+    for player in players['data']:
+        cursor.execute('insert into players\
+                        values (\
+                            %s,\
+                            %s,\
+                            %s);', (
+                                player['id'],
+                                player['attributes']['name'],
+                                player['attributes']['shardId']
+                                ))
+    return None
 
-import mysql.connector as mariadb
-db_user = config['db_un']
-db_pw = config['db_pw']
-db_host = config['db_host']
-db_name = config['db_name']
 
-mdb = mariadb.connect(user=db_user, password=db_pw, database=db_name)
-cursor = mdb.cursor()
+# Let's drop the players into the database.
+insert_players(
+    get_players(
+        player_names,
+        headers
+    ),
+    cursor
+)
 
-for player in p['data'][0]:
-    cursor.execute('insert into players\
-                    values (\
-                        {0},\
-                        {1},\
-                        {2});'.format(p['id'], p['name'], p['attributes']['shardId']))
 mdb.commit()
 mdb.close()
