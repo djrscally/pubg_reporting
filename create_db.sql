@@ -39,7 +39,6 @@ create table matches (
     , gameMode nvarchar(255) not null
     , mapName nvarchar(255) not null
     , isCustomMatch bool not null
-    , patchVersion nvarchar(255)
     , seasonState nvarchar(255) not null
     , shardId nvarchar(255) not null
 );
@@ -48,7 +47,7 @@ create table matches (
 -- in, but again no stats.
 
 create table player_matches (
-	player_match_id int not null primary key
+	player_match_id int not null primary key auto_increment
     , player_id nvarchar(255) not null
     , match_id nvarchar(255) not null
     , foreign key (player_id) references players(player_id) on update cascade on delete cascade
@@ -58,7 +57,7 @@ create table player_matches (
 -- relational table tying matches to the season that they're in
 
 create table season_matches (
-	season_match_id int not null primary key
+	season_match_id int not null primary key auto_increment
     , season_id nvarchar(255) not null
     , match_id nvarchar(255) not null
     , foreign key (season_id) references seasons(season_id) on update cascade on delete cascade
@@ -68,7 +67,7 @@ create table season_matches (
 -- a players stats for a season
 
 create table player_season_stats (
-	season_stats_id int not null primary key
+	season_stats_id int not null primary key auto_increment
     , season_id nvarchar(255) not null
     , game_mode nvarchar(255) not null
     , assists int not null
@@ -112,7 +111,7 @@ create table player_season_stats (
 -- a players stats in all seasons combined.
 
 create table player_lifetime_stats (
-	lifetime_stats_id int not null primary key
+	lifetime_stats_id int not null primary key auto_increment
     , player_id nvarchar(255) not null
     , assists int not null
     , bestRankPoint int not null
