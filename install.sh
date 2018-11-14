@@ -6,33 +6,33 @@
 # data.
 
 
-MYSQL_BIN=/usr/bin/mysqlddd
-CONFIG_FILE=./config.json22
+MYSQL_BIN=/usr/bin/mysqlx # Remove the x for production
+CONFIG_FILE=./config.jsonx # Remove the x for production
 
 function buildconfig {
 
 	# First we'll collect the info we need to make the file.
 
 	read -p "Enter the Database host: " dbhost_var
-
 	read -p "Enter the Database user: " dbuser_var
-
 	read -sp "Enter the Database password: " dbpass_var
-	echo "\n"
-	read -p "\nEnter the PUBG shard you play in: " shard_var
-
+	read -p "Enter the PUBG shard you play in: " shard_var
 	read -p "Paste in your PUBG API key: " api_var
 
 	players=()
 
-	# Create the first player and add to the array
+	# Players is a little complex as there could be any number. We'll do a simple
+	# while loop to check if the person running the script is done adding their
+	# players or whether to continue.
+
 	players+=(`read -p "Enter the first player's name: "`)
 
-	exit_loop="n"
-	while [ "exit_loop" == "n" ];
+	read -p "Are there any more players to add? (y/n): " exit_loop
+
+	while [ "$exit_loop" == "y" ];
 		do
 			players+=(`read -p "Enter the next player's name: "`)
-			exit_loop=`read -p "Are there any more player's to add? (y/n)"`
+			read -p "Are there any more player's to add? (y/n): " exit_loop
 		done
 
 	# So we create the config file and change the permissions to 700, since there's some
@@ -41,10 +41,19 @@ function buildconfig {
 	touch $CONFIG_FILE
 	chmod 700 $CONFIG_FILE
 
+	# Now we drop in all the values we collected to create a json files
+	echo $players
+	jq -n --argjson v $players '{"players": [$v]}' > $CONFIG_FILE
+
 	return 0
 }
 
-# Step 1. Check if config.json exists and build it if not.
+# Step 1. Check if all the binaries we need to exist actually do exist. If not,
+# list the missing requirements and demand they go install them.
+
+
+
+# Step 2. Check if config.json exists and build it if not.
 if [ ! -r "$CONFIG_FILE" ]; then
 	read -p "No config file available. Would you like to create one now? (y/n)" create_var
 	if [ "$create_var" == "y" ]; then
@@ -65,4 +74,3 @@ MYSQL_BIN variable"
 else
 	echo "MySQL Present and OK."
 fi
-
