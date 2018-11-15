@@ -174,3 +174,18 @@ create view vPlayersandMatches as
 	join matches m
 		on pm.match_id = m.match_id
 ;
+
+
+-- This Procedure flushes the data from the re-fillable tables. I want this available
+-- during development so that I can kill just that data as opposed to all of it, so that
+-- I don't re-GET seasons too often and annoy the nice PUBG people.
+DELIMITER //
+create procedure pFlushData()
+	begin
+		delete from player_matches;
+		delete from players;
+		delete from matches;
+	end //
+DELIMITER ;
+
+execute pFlushData;

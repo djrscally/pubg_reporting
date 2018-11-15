@@ -46,6 +46,15 @@ class pubg_database:
 
         return None
 
+    def commit(self):
+        """
+        Commits the transaction and nothing more
+        """
+
+        self.conn.commit()
+
+        return None
+
     def insert_players(self, players):
         """
         Drop all the players into the players table.
@@ -53,7 +62,7 @@ class pubg_database:
 
         cursor = self.connect()
 
-        for player in players['data']:
+        for player in players:
             cursor.execute('insert into players\
                             values (\
                                 %s,\
@@ -63,17 +72,14 @@ class pubg_database:
                                     player['attributes']['name'],
                                     player['attributes']['shardId']
                                     ))
-
+        self.commit()
         self.disconnect()
 
-        return None
+        return True
 
-    def insert_matches(self, matches, cursor):
+    def insert_matches(self, matches):
         """
-        Because of the way the API is structured, this actually inserts data
-        to both the matches and player_matches tables. Matches first otherwise
-        the foreign keys will get upset, and we wouldn't want that now would
-        we?
+
         """
 
         cursor = self.connect()
@@ -91,24 +97,51 @@ class pubg_database:
                 %s,\
                 %s);', (
                     match['id'],
-                    m['data']['attributes']['createdAt'][:-2],
-                    m['data']['attributes']['duration'],
-                    m['data']['attributes']['gameMode'],
-                    m['data']['attributes']['mapName'],
-                    m['data']['attributes']['isCustomMatch'],
-                    m['data']['attributes']['seasonState'],
-                    m['data']['attributes']['shardId']
+                    match['attributes']['createdAt'][:-2],
+                    match['attributes']['duration'],
+                    match['attributes']['gameMode'],
+                    match['attributes']['mapName'],
+                    match['attributes']['isCustomMatch'],
+                    match['attributes']['seasonState'],
+                    match['attributes']['shardId']
                     )
                 )
-
-
-
-                    cursor.execute('insert into player_matches (player_id, match_id)\
-                    values (\
-                    %s,\
-                    %s);', (player['id'], match['id'])
-                    )
-
+        self.commit()
         self.disconnect()
 
-        return None
+        return True
+
+    def insert_player_matches(self, players):
+
+        cursor = self.connect()
+
+        for player in players:
+            for match in player['relationships']['matches']['data']:
+                cursor.execute(
+                    'insert into player_matches (player_id, match_id)\
+                    values (%s, %s);',
+                    (player['id'], match['id'])
+                )
+        self.commit()
+        self.disconnect()
+
+        return True
+
+    def insert_seasons(self, seasons):
+
+        cursor = self.connect()
+
+        for season in seasons:
+            cursor.execute(
+                'insert into seasons values (%s, %s, %s);',
+                (
+                    season['id'],
+                    season['attributes']['isCurrentSeason'],
+                    season['attributes']['isOffSeason']
+                )
+            )
+
+        self.commit()
+        self.disconnect()
+
+        return True

@@ -1,24 +1,12 @@
+"""
+Class to manage the connections to the PUBG API
+"""
+
 import requests
 import json
-import mysql.connector as mysql
 
-# Load the config file
-config = json.load(open('config.json'))
-
-# Build the authorization headers so the API will accept our calls. Also define
-# the base URL for the api
-
-headers = {
-    'Authorization': config['api_key'],
-    'Accept': 'application/vnd.api+json'
-}
-
-base_url = 'https://api.pubg.com/shards/{0}'.format(config['shard'])
 
 class pubg_api:
-
-    self.matches = []
-    self.matches_json = []
 
     def __init__(self, config):
         self.headers = {
@@ -30,178 +18,108 @@ class pubg_api:
             config['shard']
         )
 
-        self.players = config['players']
+        self.player_names = config['players']
+        self.matches = []
+        self.player_season_stats = []
+        self.player_lifetime_stats = []
 
         return None
 
-    def get_players_and_matches(self):
+
+    def get_players(self):
 
         module = '/players'
-        payload = {'filter[playerNames]': ','.join(self.players)
+        payload = {'filter[playerNames]': ','.join(self.player_names)
         }
 
         r = requests.get(
-            base_url + module,
+            self.base_url + module,
             headers=self.headers,
             params=payload
             )
 
-        for player in r.json()['data']:
+        self.players = r.json()['data']
+
+        return True
+
+
+    def get_matches(self):
+
+        processed_matches = []
+
+        for player in self.players:
             for match in player['relationships']['matches']['data']:
-                if match['id'] in matches:
+                if match['id'] in processed_matches:
                     continue
                 else:
-                    self.matches.append(match['id'])
-                    self.matches_json.append(self.get_match(match['id']))
+                    processed_matches.append(match['id'])
+                    self.matches.append(self.get_match(match['id']))
 
-        return r.json()
+        return True
 
     def get_match(self, match_id):
+        """
+        Fetch a single match by calling the PUBG API, and return the json
+        """
 
         module = '/matches/{0}'.format(match_id)
 
         r = requests.get(
-            base_url + module,
+            self.base_url + module,
             headers=self.headers
         )
 
-        return r.json()
+        return r.json()['data']
 
+    def get_seasons(self):
+        """
+        Fetch the list of seasons from the API. This shouldn't change more than
+        once a month.
+        """
 
-# And make an iterator of the player names to search
-player_names = config['players']
+        module = '/seasons'
 
-# Now build the connection to the database for the insert statements
-
-mdb = mysql.connect(
-    host=config['db_host'],
-    user=config['db_un'],
-    password=config['db_pw'],
-    database=config['db_name']
-    )
-
-cursor = mdb.cursor()
-
-
-def get_players(player_names=player_names, headers=headers):
-
-    module = '/players'
-    players = ','.join(player_names)
-    payload = {'filter[playerNames]': players
-    }
-
-    r = requests.get(
-        base_url + module,
-        headers=headers,
-        params=payload
+        r = requests.get(
+            self.base_url + module,
+            headers=self.headers
         )
 
-    return r.json()
+        self.seasons = r.json()['data']
 
+        return None
 
-def get_match(match_id, headers=headers):
+    def get_player_season_stats(self):
 
-    module = '/matches/{0}'.format(match_id)
-
-    r = requests.get(
-        base_url + module,
-        headers=headers
-    )
-
-    return r.json()
-
-def insert_players(players, cursor):
-    """
-    Drop all the players into the players table.
-    """
-
-    for player in players['data']:
-        cursor.execute('insert into players\
-                        values (\
-                            %s,\
-                            %s,\
-                            %s);', (
-                                player['id'],
-                                player['attributes']['name'],
-                                player['attributes']['shardId']
-                                ))
-
-    return None
-
-def insert_matches(players, cursor):
-    """
-    Because of the way the API is structured, this actually inserts data
-    to both the matches and player_matches tables. Matches first otherwise
-    the foreign keys will get upset, and we wouldn't want that now would we?
-    """
-
-    matches = []
-
-    for player in players['data']:
-        for match in player['relationships']['matches']['data']:
-
-            if match['id'] in matches:
-                continue
-            else:
-                m = get_match(match['id'])
-                cursor.execute('insert into matches\
-                                values (\
-                                    %s,\
-                                    %s,\
-                                    %s,\
-                                    %s,\
-                                    %s,\
-                                    %s,\
-                                    %s,\
-                                    %s);', (
-                                        match['id'],
-                                        m['data']['attributes']['createdAt'][:-2],
-                                        m['data']['attributes']['duration'],
-                                        m['data']['attributes']['gameMode'],
-                                        m['data']['attributes']['mapName'],
-                                        m['data']['attributes']['isCustomMatch'],
-                                        m['data']['attributes']['seasonState'],
-                                        m['data']['attributes']['shardId']
-                                    )
-                                )
-                print(cursor.statement)
-                mdb.commit()
-                matches.append(match['id'])
-
-            try:
-                cursor.execute('insert into player_matches (player_id, match_id)\
-                    values (\
-                    %s,\
-                    %s);', (player['id'], match['id'])
+        for player in self.players:
+            for season in self.seasons:
+                module ='/players/{0}/seasons/{1}'.format(
+                    player['id'],
+                    season['id']
                 )
-            except:
-                print(cursor.statement)
-                raise
+                r = requests.get(
+                    self.base_url + module,
+                    headers=self.headers
+                )
+                self.player_season_stats.append(
+                    r.json()['data']
+                )
 
-    return None
-"""
+        return None
 
-#%%
-p = get_players()
+    def get_player_lifetime_stats(self):
 
-#%%
+        for player in self.players:
+            module = '/players/{0}/seasons/lifetime'.format(
+                player['id']
+            )
 
-insert_players(p, cursor)
+            r = requests.get(
+                self.base_url + module,
+                headers=self.headers
+            )
 
-#%%
-insert_matches(p, cursor)
-#%%
-mdb.close()
-#%%
-# Let's drop the players into the database.
-insert_players(
-    get_players(
-        player_names,
-        headers
-    ),
-    cursor
-)
+            self.player_lifetime_stats.append(
+                r.json()['data']
+            )
 
-mdb.commit()
-mdb.close()
-"""
+        return None
