@@ -15,6 +15,59 @@ headers = {
 
 base_url = 'https://api.pubg.com/shards/{0}'.format(config['shard'])
 
+class pubg_api:
+
+    self.matches = []
+    self.matches_json = []
+
+    def __init__(self, config):
+        self.headers = {
+            'Authorization': config['api_key'],
+            'Accept': 'application/vnd.api+json'
+        }
+
+        self.base_url = 'https://api.pubg.com/shards/{0}'.format(
+            config['shard']
+        )
+
+        self.players = config['players']
+
+        return None
+
+    def get_players_and_matches(self):
+
+        module = '/players'
+        payload = {'filter[playerNames]': ','.join(self.players)
+        }
+
+        r = requests.get(
+            base_url + module,
+            headers=self.headers,
+            params=payload
+            )
+
+        for player in r.json()['data']:
+            for match in player['relationships']['matches']['data']:
+                if match['id'] in matches:
+                    continue
+                else:
+                    self.matches.append(match['id'])
+                    self.matches_json.append(self.get_match(match['id']))
+
+        return r.json()
+
+    def get_match(self, match_id):
+
+        module = '/matches/{0}'.format(match_id)
+
+        r = requests.get(
+            base_url + module,
+            headers=self.headers
+        )
+
+        return r.json()
+
+
 # And make an iterator of the player names to search
 player_names = config['players']
 
@@ -45,6 +98,7 @@ def get_players(player_names=player_names, headers=headers):
 
     return r.json()
 
+
 def get_match(match_id, headers=headers):
 
     module = '/matches/{0}'.format(match_id)
@@ -54,7 +108,7 @@ def get_match(match_id, headers=headers):
         headers=headers
     )
 
-    return r.json() # because I'm a placeholder
+    return r.json()
 
 def insert_players(players, cursor):
     """
@@ -125,6 +179,8 @@ def insert_matches(players, cursor):
                 raise
 
     return None
+"""
+
 #%%
 p = get_players()
 
@@ -148,3 +204,4 @@ insert_players(
 
 mdb.commit()
 mdb.close()
+"""

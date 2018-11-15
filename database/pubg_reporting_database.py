@@ -68,7 +68,7 @@ class pubg_database:
 
         return None
 
-    def insert_matches(self, players, cursor):
+    def insert_matches(self, matches, cursor):
         """
         Because of the way the API is structured, this actually inserts data
         to both the matches and player_matches tables. Matches first otherwise
@@ -78,38 +78,30 @@ class pubg_database:
 
         cursor = self.connect()
 
-        matches = []
-
-        for player in players['data']:
-            for match in player['relationships']['matches']['data']:
-
-                if match['id'] in matches:
-                    continue
-                else:
-                    m = get_match(match['id'])
-                    cursor.execute(
-                    'insert into matches\
-                    values (\
-                    %s,\
-                    %s,\
-                    %s,\
-                    %s,\
-                    %s,\
-                    %s,\
-                    %s,\
-                    %s);', (
-                        match['id'],
-                        m['data']['attributes']['createdAt'][:-2],
-                        m['data']['attributes']['duration'],
-                        m['data']['attributes']['gameMode'],
-                        m['data']['attributes']['mapName'],
-                        m['data']['attributes']['isCustomMatch'],
-                        m['data']['attributes']['seasonState'],
-                        m['data']['attributes']['shardId']
-                        )
+        for match in matches:
+            cursor.execute(
+                'insert into matches\
+                values (\
+                %s,\
+                %s,\
+                %s,\
+                %s,\
+                %s,\
+                %s,\
+                %s,\
+                %s);', (
+                    match['id'],
+                    m['data']['attributes']['createdAt'][:-2],
+                    m['data']['attributes']['duration'],
+                    m['data']['attributes']['gameMode'],
+                    m['data']['attributes']['mapName'],
+                    m['data']['attributes']['isCustomMatch'],
+                    m['data']['attributes']['seasonState'],
+                    m['data']['attributes']['shardId']
                     )
+                )
 
-                    matches.append(match['id'])
+
 
                     cursor.execute('insert into player_matches (player_id, match_id)\
                     values (\

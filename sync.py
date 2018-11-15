@@ -6,3 +6,9 @@ import json
 config = json.load(open('config.json'))
 
 pdb = pubg_database(config)
+api = pubg_api(config)
+
+#%%
+players = api.get_players()
+#%%
+players['data'][0]
