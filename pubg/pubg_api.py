@@ -4,7 +4,7 @@ Class to manage the connections to the PUBG API
 
 import requests
 import json
-
+import time
 
 class pubg_api:
 
@@ -74,7 +74,9 @@ class pubg_api:
     def get_seasons(self):
         """
         Fetch the list of seasons from the API. This shouldn't change more than
-        once a month.
+        once a month and the API documentation specifically says not to call the
+        endpoint more regularly than that, so we'll cache it in the DB unless
+        the time-last-called is more than 1 month ago.
         """
 
         module = '/seasons'
@@ -89,6 +91,12 @@ class pubg_api:
         return None
 
     def get_player_season_stats(self):
+        """
+        This call has to be rate limited, as it's pretty fast to complete which
+        means it often hits the API's transaction limit and returns a html 429
+        code. 4 second pauses between calls seems to avoid the issue, but I'll
+        include a condition to pause for 20 seconds if it hits the issue.
+        """
 
         for player in self.players:
             for season in self.seasons:
@@ -96,13 +104,25 @@ class pubg_api:
                     player['id'],
                     season['id']
                 )
+
                 r = requests.get(
                     self.base_url + module,
                     headers=self.headers
                 )
+
+                while r.status_code == 429:
+                    time.sleep(20)
+                    
+                    r = requests.get(
+                        self.base_url + module,
+                        headers=self.headers
+                    )
+
                 self.player_season_stats.append(
                     r.json()['data']
                 )
+
+                time.sleep(5)
 
         return None
 

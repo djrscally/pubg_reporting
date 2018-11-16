@@ -69,6 +69,7 @@ create table season_matches (
 create table player_season_stats (
 	season_stats_id int not null primary key auto_increment
     , season_id nvarchar(255) not null
+    , player_id nvarchar(255) not null
     , game_mode nvarchar(255) not null
     , assists int not null
     , bestRankPoint int not null
@@ -106,6 +107,7 @@ create table player_season_stats (
     , winPoints int not null
     , wins int not null
     , foreign key (season_id) references seasons(season_id) on update cascade on delete cascade
+    , foreign key (player_id) references players(player_id) on update cascade on delete cascade
 );
 
 -- a players stats in all seasons combined.
@@ -113,6 +115,7 @@ create table player_season_stats (
 create table player_lifetime_stats (
 	lifetime_stats_id int not null primary key auto_increment
     , player_id nvarchar(255) not null
+		, game_mode nvarchar(255) not null
     , assists int not null
     , bestRankPoint int not null
     , boosts int not null
@@ -182,10 +185,13 @@ create view vPlayersandMatches as
 DELIMITER //
 create procedure pFlushData()
 	begin
-		delete from player_matches;
 		delete from players;
 		delete from matches;
+		delete from player_matches;
+		delete from player_season_stats;
+		delete from player_lifetime_stats;
+		delete from season_matches
 	end //
 DELIMITER ;
 
-execute pFlushData;
+call pFlushData;
