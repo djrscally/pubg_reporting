@@ -26,6 +26,7 @@ $ git clone https://github.com/djrscally/pubg_reporting
 $ cd pubg_reporting
 $ touch config.json
 ```
+
 Use whatever text editor you prefer to populate the config file in the following
 format:
 
@@ -46,6 +47,7 @@ format:
 
 }
 ```
+
 Because that file has the connection info saved to it, you'll want to change the
 permissions so that yours is the only user allowed to read it:
 
@@ -59,4 +61,4 @@ $ mysql -u << mysql user >> -p < database/create_db.sql
 $ python3 ./sync.py
 ```
 
-And you should be up and running! 
+And you should be up and running!

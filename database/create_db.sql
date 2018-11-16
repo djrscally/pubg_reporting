@@ -178,6 +178,59 @@ create view vPlayersandMatches as
 		on pm.match_id = m.match_id
 ;
 
+create view vPlayersandSeasons as
+	select
+		p.player_id
+		, p.player_name
+		, pss.season_id
+		, pss.game_mode
+		, pss.assists
+		, pss.bestRankPoint
+		, pss.boosts
+		, pss.dBNOs
+		, pss.dailyKills
+		, pss.damageDealt
+		, pss.days
+		, pss.dailyWins
+		, pss.headshotKills
+		, pss.heals
+		, pss.killPoints
+		, pss.kills
+		, pss.longestKill
+		, pss.longestTimeSurvived
+		, pss.losses
+		, pss.maxKillStreaks
+		, pss.mostSurvivalTime
+		, pss.rankPoints
+		, pss.revives
+		, pss.rideDistance
+		, pss.roadKills
+		, pss.roundMostKills
+		, pss.roundsPlayed
+		, pss.suicides
+		, pss.swimDistance
+		, pss.teamKills
+		, pss.timeSurvived
+		, pss.top10s
+		, pss.vehicleDestroys
+		, pss.walkDistance
+		, pss.weaponsAcquired
+		, pss.weeklyKills
+		, pss.weeklyWins
+		, pss.winPoints
+		, pss.wins
+	from
+		players p
+	join
+		player_season_stats pss
+			on p.player_id = pss.player_id
+;
+
+create view vGameModeStats as
+	select
+		game_mode
+		, sum()
+
 
 -- This Procedure flushes the data from the re-fillable tables. I want this available
 -- during development so that I can kill just that data as opposed to all of it, so that
@@ -193,5 +246,3 @@ create procedure pFlushData()
 		delete from season_matches;
 	end //
 DELIMITER ;
-
-call pFlushData;
