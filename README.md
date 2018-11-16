@@ -2,6 +2,12 @@
 
 ### Database structure and sync scripts to build a reporting database fetching data from the PUBG API. This will allow you to use tools like Metabase to build custom dashboards for your team. Make pretty graphs, win nerd cred.
 
+### Status:
+
+Definitely whatever pre-pre-Alpha is called, but the scripts will set up the db
+and fetch the data from the API now, so it's basically useable if not especially
+user friendly just yet.
+
 #### Installation:
 
 As install.sh isn't working properly yet you'd have to do this pretty manually.
@@ -44,3 +50,13 @@ Because that file has the connection info saved to it, you'll want to change the
 permissions so that yours is the only user allowed to read it:
 
 `$ chmod 700 config.json`
+
+From here, it should just be a case of running the db creation and data population
+scripts
+
+```
+$ mysql -u << mysql user >> -p < database/create_db.sql
+$ python3 ./sync.py
+```
+
+And you should be up and running! 
