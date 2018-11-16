@@ -226,11 +226,6 @@ create view vPlayersandSeasons as
 			on p.player_id = pss.player_id
 ;
 
-create view vGameModeStats as
-	select
-		game_mode
-		, sum()
-
 
 -- This Procedure flushes the data from the re-fillable tables. I want this available
 -- during development so that I can kill just that data as opposed to all of it, so that
