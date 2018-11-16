@@ -11,7 +11,7 @@ CONFIG_FILE=./config.jsonx # Remove the x for production
 
 function buildconfig {
 
-	# First we'll collect the info we need to make the file.
+	# First we'll collect the info we need to generate the config
 
 	read -p "Enter the Database host: " dbhost_var
 	read -p "Enter the Database user: " dbuser_var

@@ -190,7 +190,7 @@ create procedure pFlushData()
 		delete from player_matches;
 		delete from player_season_stats;
 		delete from player_lifetime_stats;
-		delete from season_matches
+		delete from season_matches;
 	end //
 DELIMITER ;
 
