@@ -8,8 +8,13 @@ config = json.load(open('config.json'))
 pdb = pubg_database(config)
 
 api = pubg_api(config)
-
-
+#%%
+api.get_seasons()
+#%%
+pdb.disconnect()
+#%%
+pdb.insert_seasons(api.seasons)
+#%%
 pdb.flush_db()
 api.get_players()
 
