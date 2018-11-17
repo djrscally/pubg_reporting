@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -i
 
 # This script installs the pubg_reporting database, along with associated
 # infrastructure like the config.json file defining the parameters, the
@@ -17,6 +17,9 @@ checkconfig(){
 		read -p "No config file found. Would you like to create one now? (y/n) " create_var
 		if [ "$create_var" == "y" ]; then
 			$PYTHON_BIN ./config.py
+			# chmod 700 to deny read permissions to other users, since the file contains
+			# db credentials.  
+			chmod 700 $CONFIG_FILE
 		else
 			echo "This installation requires a config file. Please re-run the script later"
 			exit 1
@@ -63,13 +66,53 @@ variable"
 	DB_UN=`jq ".db_un" config.json`
 	DB_PW=`jq ".db_pw" config.json`
 
-	# run the create_db.sql script to create the database
-	$MYSQL_BIN -u "$DB_UN" -p "$DB_PW" < database/create_db.sql
-	# run the sync.py script to fill it with data
+	# Step 3. Run the create_db.sql script to create the database
+	echo "Please enter the password for the MySQL user (to avoid it appearing in history)."
+	{
+	eval "$MYSQL_BIN -u $DB_UN -p < database/create_db.sql"
+	} || {
+	echo "ERROR: There was a problem initialising the database. Exiting"
+	exit 1
+	}
+	# Step 4. Run the sync.py script to fill it with data
+	{
 	$PYTHON_BIN ./sync.py
-	# create a cron job to automate the script to run every night.
+	} || {
+	echo "ERROR: There was a problem running sync.py. Exiting"
+	exit 1
+	}
+
+	# Step 5. Create a cron job to automate the script to run every night at 4am
+	crontab -l >> mycron
+	echo "0 4 * * * $PYTHON_BIN $PWD/sync.py" >> mycron
+	crontab mycron
+	rm mycron
 
 }
+
+uninstall(){
+
+	# Load the DB Credentials
+
+	DB_UN=`jq ".db_un" config.json`
+	DB_PW=`jq ".db_pw" config.json`
+
+	# Step 1. Remove the cron job
+	crontab -l | grep -v "$PYTHON_BIN $PWD/sync.py" | crontab -
+
+	# Step 2. Nuke the database
+	echo "Please enter the password for the MySQL user (to avoid it appearing in history)"
+	{
+	eval "$MYSQL_BIN -u $DB_UN -p < database/delete_db.sql"
+	} || {
+	echo "ERROR: There was a problem deleting the database. Exiting"
+	exit 1
+	}
+	# And that's it. We'll leave the files, rm still works if they want to get rid
+	# of the dir entirely.
+	echo "Uninstall complete."
+}
+
 
 
 case "$1" in
@@ -77,12 +120,8 @@ case "$1" in
 		install
 	;;
 	uninstall)
-		echo "UNINSTALL!!"
-	;;
-	reload)
-		echo "RELOAD!!"
+		uninstall
 	;;
 	*)
-		echo "Usage: $0 {install|uninstall|reload}"
+		echo "Usage: $0 {install|uninstall}"
 esac
-echo "$1 operation complete."

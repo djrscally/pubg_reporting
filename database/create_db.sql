@@ -10,20 +10,20 @@
 -- -------------------------------------------------------------------
 
 -- start by reinitialising the db if it exists already
-drop database if exists pubg_reporting;
+
 create database if not exists pubg_reporting;
 
 use pubg_reporting;
 
 -- players table, which is fairly minimal
-create table players (
+create table if not exists players (
 	player_id nvarchar(255) not null primary key
     , player_name nvarchar(255) not null
     , shard_id nvarchar(255)
 );
 
 -- seasons table, also minimal
-create table seasons (
+create table if not exists seasons (
 	season_id nvarchar(255) not null primary key
     , is_current_season bool not null
     , is_off_season bool not null
@@ -32,7 +32,7 @@ create table seasons (
 -- matches table, details about the actual rounds played (although
 -- not any stats which is weird)
 
-create table matches (
+create table if not exists matches (
 	match_id nvarchar(255) not null primary key
     , createdAt datetime not null
     , duration int not null
@@ -46,7 +46,7 @@ create table matches (
 -- relational table tying players to the matches they have been
 -- in, but again no stats.
 
-create table player_matches (
+create table if not exists player_matches (
 	player_match_id int not null primary key auto_increment
     , player_id nvarchar(255) not null
     , match_id nvarchar(255) not null
@@ -56,7 +56,7 @@ create table player_matches (
 
 -- relational table tying matches to the season that they're in
 
-create table season_matches (
+create table if not exists season_matches (
 	season_match_id int not null primary key auto_increment
     , season_id nvarchar(255) not null
     , match_id nvarchar(255) not null
@@ -66,7 +66,7 @@ create table season_matches (
 
 -- a players stats for a season
 
-create table player_season_stats (
+create table if not exists player_season_stats (
 	season_stats_id int not null primary key auto_increment
     , season_id nvarchar(255) not null
     , player_id nvarchar(255) not null
@@ -112,7 +112,7 @@ create table player_season_stats (
 
 -- a players stats in all seasons combined.
 
-create table player_lifetime_stats (
+create table if not exists player_lifetime_stats (
 	lifetime_stats_id int not null primary key auto_increment
     , player_id nvarchar(255) not null
 		, game_mode nvarchar(255) not null
@@ -158,7 +158,7 @@ create table player_lifetime_stats (
 -- Now for some views to make sensible 'tables' for reporting purposes.
 -- ----------------------------------------------------------------------------
 
-create view vPlayersandMatches as
+create or replace view vPlayersandMatches as
 	select
 		p.player_id
     , p.player_name
@@ -178,7 +178,7 @@ create view vPlayersandMatches as
 		on pm.match_id = m.match_id
 ;
 
-create view vPlayersandSeasons as
+create or replace view vPlayersandSeasons as
 	select
 		p.player_id
 		, p.player_name
@@ -230,7 +230,9 @@ create view vPlayersandSeasons as
 -- This Procedure flushes the data from the re-fillable tables. I want this available
 -- during development so that I can kill just that data as opposed to all of it, so that
 -- I don't re-GET seasons too often and annoy the nice PUBG people.
+
 DELIMITER //
+drop procedure if exists pFlushData;
 create procedure pFlushData()
 	begin
 		delete from players;
@@ -239,5 +241,6 @@ create procedure pFlushData()
 		delete from player_season_stats;
 		delete from player_lifetime_stats;
 		delete from season_matches;
+		delete from seasons;
 	end //
 DELIMITER ;

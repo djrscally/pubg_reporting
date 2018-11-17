@@ -2,37 +2,54 @@ from database.pubg_reporting_database import pubg_database
 from pubg.pubg_api import pubg_api
 import json
 
-
+print("Loading config...")
 config = json.load(open('config.json'))
 
-pdb = pubg_database(config)
+print("Initialising database and api classes")
+try:
+    pdb = pubg_database(config)
+except Exception as e:
+    print("Error initialising database: ", e)
 
-api = pubg_api(config)
+try:
+    api = pubg_api(config)
+except Exception as e:
+    print("Error initialising api:",  e)
 
-api.get_seasons()
+try:
+    print("------ Beginning GET block ------")
+    print("Fetching seasons...")
+    api.get_seasons()
+    print("Fetching players...")
+    api.get_players()
+    print("Fetching matches...")
+    api.get_matches()
+    print("Fetching player\'s lifetime stats...")
+    api.get_player_lifetime_stats()
+    print("Fetching player\'s season stats...")
+    api.get_player_season_stats()
 
-api.get_players()
+except Exception as e:
+    print("Error fetching data from the API: ", e)
 
-api.get_matches()
+try:
+    print("------ Flushing Database ------")
+    pdb.flush_db()
+    print("------ Beginning INSERT block ------")
+    print("Inserting players...")
+    pdb.insert_players(api.players)
+    print("Inserting matches...")
+    pdb.insert_matches(api.matches)
+    print("Inserting seasons...")
+    pdb.insert_seasons(api.seasons)
+    print("Inserting player\'s matches...")
+    pdb.insert_player_matches(api.players)
+    print("Inserting player\'s season stats...")
+    pdb.insert_player_season_stats(api.player_season_stats)
+    print("Inserting player\'s lifetime stats...")
+    pdb.insert_player_lifetime_stats(api.player_lifetime_stats)
+except Exception as e:
+    print("Error inserting data to the database: ", e)
 
-api.get_player_lifetime_stats()
-
-api.get_player_season_stats()
-
-pdb.flush_db()
-
-pdb.insert_players(api.players)
-
-pdb.insert_matches(api.matches)
-
-pdb.insert_seasons(api.seasons)
-
-pdb.insert_player_matches(api.players)
-
-pdb.insert_player_season_stats(api.player_season_stats)
-
-pdb.insert_player_lifetime_stats(api.player_lifetime_stats)
-
-# TODO: Insert season_matches
-#%%
+# Exit nicely, no matter what.
 pdb.disconnect()

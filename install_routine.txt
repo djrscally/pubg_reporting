@@ -1,4 +1,0 @@
-[MySQL]
-1. create new user "pubg_reporting"
-2. run db script
-3. grant privileges on pubg_reporting to user pubg_reporting
