@@ -47,12 +47,12 @@ that you want to track, your database connection details and the PUBG shard and 
 use. It will then build the database and populate it by fetching data from the API.
 
 Once the script completes, you should be good to go; you can hook in whichever analysis tool
-takes your fancy. I like [Metabase](https://www.metabase.com/)
+takes your fancy. I like [Metabase](https://www.metabase.com/).
 
 #### For Windows
 
-*Please Note: ** I have not tested this at all. It ought to work fine, but no promises.
-At *some point* I'll get round to making a PowerShell script to replicate install.sh, but for now...
+**Please Note: ** I have not tested this at all. It ought to work fine, but no promises.
+At **some point** I'll get round to making a PowerShell script to replicate install.sh, but for now...
 
 1. Follow the same mandatory pre-requisite steps as for Linux, but skip \#3.
 2. If you can `git clone https://github.com/djrscally/pubg_reporting` in PowerShell then do that. If not, just go to that repo in a browser and hit the green "Clone or Download" button
