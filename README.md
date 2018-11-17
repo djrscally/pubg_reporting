@@ -51,7 +51,7 @@ takes your fancy. I like [Metabase](https://www.metabase.com/).
 
 #### For Windows
 
-**Please Note: ** I have not tested this at all. It ought to work fine, but no promises.
+**Please Note:** I have not tested this at all. It ought to work fine, but no promises.
 At **some point** I'll get round to making a PowerShell script to replicate install.sh, but for now...
 
 1. Follow the same mandatory pre-requisite steps as for Linux, but skip \#3.
@@ -86,7 +86,7 @@ And that should work fine. Use Task Scheduler to run C:\\path\\to\\python\\py.ex
 
 ### Uninstallation
 
-This involves removing the cron job so it doesn't try and run the daily sync anymore, and deleting the database. Just move into the repo's directly and run install.sh but tell it to uninstall instead:
+This involves removing the cron job so it doesn't try and run the daily sync anymore, and deleting the database. Just move into the repo's directory and run install.sh but tell it to uninstall instead:
 
 ```
 $ cd pubg_reporting
