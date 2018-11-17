@@ -1,4 +1,4 @@
-#!/bin/bash -i
+#!/bin/bash
 
 # This script installs the pubg_reporting database, along with associated
 # infrastructure like the config.json file defining the parameters, the
@@ -18,7 +18,7 @@ checkconfig(){
 		if [ "$create_var" == "y" ]; then
 			$PYTHON_BIN ./config.py
 			# chmod 700 to deny read permissions to other users, since the file contains
-			# db credentials.  
+			# db credentials.
 			chmod 700 $CONFIG_FILE
 		else
 			echo "This installation requires a config file. Please re-run the script later"

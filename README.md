@@ -23,9 +23,9 @@ Change `0 4 * * *` to a setting that suits you better.
 Also, I assume you're using Linux. If you're on Windows then this will all still work fine, except
 for the install script. See below for instructions on what to do in that case.
 
-#### Installation:
+### Installation:
 
-##### For Linux
+#### For Linux
 Follow these mandatory pre-requisite steps:
 
   1. Make sure Python3 is installed.
@@ -34,8 +34,7 @@ Follow these mandatory pre-requisite steps:
   4. Make sure Python libraries [requests](http://docs.python-requests.org/en/master/) and the [MySQL Connector](https://dev.mysql.com/doc/connector-python/en/connector-python-installation.html) are installed
   5. Create a MySQL user with `create database ...;` privileges
 
-Start by running these commands to get the files and move into this directory,
-then run the install.sh script.
+Run these commands to get the files and move into the repo's directory, then run the install.sh script.
 
 ```  
 $ git clone https://github.com/djrscally/pubg_reporting
@@ -50,7 +49,7 @@ use. It will then build the database and populate it by fetching data from the A
 Once the script completes, you should be good to go; you can hook in whichever analysis tool
 takes your fancy. I like [Metabase](https://www.metabase.com/)
 
-##### For Windows
+#### For Windows
 
 *Please Note: ** I have not tested this at all. It ought to work fine, but no promises.
 At *some point* I'll get round to making a PowerShell script to replicate install.sh, but for now...
@@ -84,3 +83,14 @@ Because that file has the connection info saved to it, you'll want to change the
 5. Open PowerShell in the pubg_reporting directory and run `py -3 ./sync.py`
 
 And that should work fine. Use Task Scheduler to run C:\\path\\to\\python\\py.exe with the argument C:\\path\\to\\repo\\pubg_reporting\\sync.py and the data should update on the schedule you specify
+
+### Uninstallation
+
+This involves removing the cron job so it doesn't try and run the daily sync anymore, and deleting the database. Just move into the repo's directly and run install.sh but tell it to uninstall instead:
+
+```
+$ cd pubg_reporting
+$ ./install.sh uninstall
+```
+
+And that should be it.
