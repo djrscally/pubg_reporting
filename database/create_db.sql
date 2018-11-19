@@ -226,6 +226,51 @@ create or replace view vPlayersandSeasons as
 			on p.player_id = pss.player_id
 ;
 
+create or replace view vGameModeSeasonStats as
+	select
+		pss.season_id
+		, pss.game_mode
+		, sum(pss.assists) as assists
+		, sum(pss.bestRankPoint) as bestRankPoint
+		, sum(pss.boosts) as boosts
+		, sum(pss.dBNOs) as dBNOs
+		, sum(pss.dailyKills) as dailyKills
+		, sum(pss.damageDealt) as damageDealt
+		, sum(pss.days) as days
+		, sum(pss.dailyWins) as dailyWins
+		, sum(pss.headshotKills) as headshotKills
+		, sum(pss.heals) as heals
+		, sum(pss.killPoints) as killPoints
+		, sum(pss.kills) as kills
+		, sum(pss.longestKill) as longestKill
+		, sum(pss.longestTimeSurvived) as longestTimeSurvived
+		, sum(pss.losses) as losses
+		, sum(pss.maxKillStreaks) as maxKillStreaks
+		, sum(pss.mostSurvivalTime) as mostSurvivalTime
+		, sum(pss.rankPoints) as rankPoints
+		, sum(pss.revives) as revives
+		, sum(pss.rideDistance) as rideDistance
+		, sum(pss.roadKills) as roadKills
+		, sum(pss.roundMostKills) as roundMostKills
+		, sum(pss.roundsPlayed) as roundsPlayed
+		, sum(pss.suicides) as suicides
+		, sum(pss.swimDistance) as swimDistance
+		, sum(pss.teamKills) as teamKills
+		, sum(pss.timeSurvived) as timeSurvived
+		, sum(pss.top10s) as top10s
+		, sum(pss.vehicleDestroys) as vehicleDestroys
+		, sum(pss.walkDistance) as walkDistance
+		, sum(pss.weaponsAcquired) as weaponsAcquired
+		, sum(pss.weeklyKills) as weeklyKills
+		, sum(pss.weeklyWins) as weeklyWins
+		, sum(pss.winPoints) as winPoints
+		, sum(pss.wins) as wins
+	from player_season_stats pss
+	group by
+		pss.season_id
+		, pss.game_mode
+;
+
 
 -- This Procedure flushes the data from the re-fillable tables. I want this available
 -- during development so that I can kill just that data as opposed to all of it, so that

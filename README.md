@@ -4,11 +4,7 @@
 
 ### Status:
 
-Definitely whatever pre-pre-Alpha is called, but the scripts will set up the db
-and fetch the data from the API now, so it's basically useable if not especially
-user friendly just yet.
-
-Everything should be basically useable. Installation is relatively simple
+Everything should be basically useable. Installation is relatively simple. I want to flesh this readme out with some documentation about the tables and available views, as well as create some more useful views to begin with, but go ahead and use it now if you want to get started.
 
 ### Assumptions
 
@@ -32,7 +28,7 @@ Follow these mandatory pre-requisite steps:
   2. Make sure MySQL is installed
   3. Make sure [jq](https://stedolan.github.io/jq/) is installed.
   4. Make sure Python libraries [requests](http://docs.python-requests.org/en/master/) and the [MySQL Connector](https://dev.mysql.com/doc/connector-python/en/connector-python-installation.html) are installed
-  5. Create a MySQL user with `create database ...;` privileges
+  5. Create a MySQL user for the scripts to use. You can use an existing one obviously, but I'd suggest a dedicated user; never a bad idea to separate privileges. Once you've created the user in the mysql shell run `grant all on $(db_name).* to '$(db_user)'@'localhost';` and then `flush privileges;`. Replace $(db_name) and $(db_user) with the appropriate values that you've chosen
 
 Run these commands to get the files and move into the repo's directory, then run the install.sh script.
 
