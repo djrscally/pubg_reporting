@@ -3,9 +3,11 @@ Class to manage the connection and transactional functions for the MySQL
 database.
 """
 
-import mysql.connector as mysql
+from model import User, Match
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-class pubg_database:
+class PUBGDBConnector:
 
     def __init__(self, config):
         """
@@ -13,10 +15,8 @@ class pubg_database:
         more or less it.
         """
 
-        self.host = config['db_host']
-        self.user = config['db_un']
-        self.password = config['db_pw']
-        self.database = config['db_name']
+        self.engine=create_engine('sqlite:///:memory:', echo=True)
+        self.session = sessionmaker(bind=self.engine)
 
         return None
 
@@ -67,25 +67,25 @@ class pubg_database:
 
         return None
 
+        session.add_all([
+...     User(name='wendy', fullname='Wendy Williams', nickname='windy'),
+...     User(name='mary', fullname='Mary Contrary', nickname='mary'),
+...     User(name='fred', fullname='Fred Flintstone', nickname='freddy')])
+
     def insert_players(self, players):
         """
         Drop all the players into the players table.
         """
 
-        cursor = self.connect()
+        self.session.add_all(
+            [Player(
+                player_id=player['id'],
+                player_name=player['attributes']['name'],
+                shard_id=player['attributes']['shardId']
+            ) for player in players]
+        )
 
-        for player in players:
-            cursor.execute('insert into players\
-                            values (\
-                                %s,\
-                                %s,\
-                                %s);', (
-                                    player['id'],
-                                    player['attributes']['name'],
-                                    player['attributes']['shardId']
-                                    ))
-        self.commit()
-        self.disconnect()
+        self.session.commit()
 
         return True
 

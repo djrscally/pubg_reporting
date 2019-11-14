@@ -2,3 +2,5 @@ config.json
 majorclagnut.py
 ./pubg/*.pyc
 ./database/*.pyc
+*.db
+database/__pycache__/
