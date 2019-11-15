@@ -3,54 +3,20 @@ Class to manage the connection and transactional functions for the MySQL
 database.
 """
 
-from model import User, Match
+from .model import Player, Match
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-class PUBGDBConnector:
+class PUBGDatabaseConnector:
 
-    def __init__(self, config):
+    def __init__(self, engine_uri, echo=False):
         """
         Define connection parameters for the MySQL connection, and that's
         more or less it.
         """
 
-        self.engine=create_engine('sqlite:///:memory:', echo=True)
-        self.session = sessionmaker(bind=self.engine)
-
-        return None
-
-    def connect(self):
-        """
-        Connect to the database. This is going to be transient and close after
-        each transactional function is finished (or rather immediately before
-        the return statement).
-        """
-
-        self.conn = mysql.connect(
-            host=self.host,
-            user=self.user,
-            password=self.password,
-            database=self.database,
-            )
-
-        return self.conn.cursor()
-
-    def disconnect(self):
-        """
-        Provide the facility to exit nicely. No sense in leaving connections
-        hanging around.
-        """
-        self.conn.close()
-
-        return None
-
-    def commit(self):
-        """
-        Commits the transaction and nothing more
-        """
-
-        self.conn.commit()
+        self.engine=create_engine(engine_uri, echo=echo)
+        self.Session = sessionmaker(bind=self.engine)
 
         return None
 
@@ -67,17 +33,14 @@ class PUBGDBConnector:
 
         return None
 
-        session.add_all([
-...     User(name='wendy', fullname='Wendy Williams', nickname='windy'),
-...     User(name='mary', fullname='Mary Contrary', nickname='mary'),
-...     User(name='fred', fullname='Fred Flintstone', nickname='freddy')])
-
     def insert_players(self, players):
         """
         Drop all the players into the players table.
         """
 
-        self.session.add_all(
+        session = self.Session()
+
+        session.add_all(
             [Player(
                 player_id=player['id'],
                 player_name=player['attributes']['name'],
@@ -85,7 +48,7 @@ class PUBGDBConnector:
             ) for player in players]
         )
 
-        self.session.commit()
+        session.commit()
 
         return True
 

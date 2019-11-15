@@ -39,10 +39,10 @@ class Player(Base):
     matches = relationship(
         'Match',
         secondary=player_matches,
-        back_populates='players'
+    back_populates='players'
     )
 
-    player_season_stats = relationship(
+    seasons= relationship(
         'PlayerSeasonStats',
         back_populates='players'
     )
@@ -66,7 +66,10 @@ class Season(Base):
     is_current_season = Column(Boolean, nullable=False)
     is_off_season = Column(Boolean, nullable=False)
 
-    player_season_stats = relationship('PlayerSeasonStats', back_populates='seasons')
+    players = relationship(
+        'PlayerSeasonStats',
+        back_populates='seasons'
+    )
 
     def __repr__(self):
         return "<Season(season_id={0})".format(self.season_id)
@@ -111,10 +114,10 @@ class PlayerSeasonStats(Base):
     season_stats_id = Column(Integer, primary_key=True, autoincrement=True)
 
     season_id = Column(String, ForeignKey('seasons.season_id'), nullable=False)
-    seasons = relationship('Season', back_populates='seasons')
+    season = relationship('Season', back_populates='players')
 
     player_id = Column(String, ForeignKey('players.player_id'), nullable=False)
-    players = relationship('Player', back_populates='players')
+    player = relationship('Player', back_populates='seasons')
 
     game_mode = Column(String, nullable=False)
 
@@ -158,7 +161,7 @@ class PlayerSeasonStats(Base):
     def __repr__(self):
         return "<PlayerSeasonStats(season_id={0}, player_id={1})>".format(self.season_id, self.player_id)
 
-class PlayerLifetimeStates(Base):
+class PlayerLifetimeState(Base):
     """
     Placeholder
     """
