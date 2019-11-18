@@ -6,6 +6,7 @@ database.
 from .model import Player, Match
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import datetime
 
 class PUBGDatabaseConnector:
 
@@ -15,7 +16,7 @@ class PUBGDatabaseConnector:
         more or less it.
         """
 
-        self.engine=create_engine(engine_uri, echo=echo)
+        self.engine = create_engine(engine_uri, echo=True)
         self.Session = sessionmaker(bind=self.engine)
 
         return None
@@ -54,44 +55,43 @@ class PUBGDatabaseConnector:
 
     def insert_matches(self, matches):
         """
-
+        Takes matches from the API output and adds them as Match() objects to
+        the ORM.
         """
 
-        cursor = self.connect()
+        session = self.Session()
 
-        for match in matches:
-            cursor.execute(
-                'insert into matches\
-                values (\
-                %s,\
-                %s,\
-                %s,\
-                %s,\
-                %s,\
-                %s,\
-                %s,\
-                %s);', (
-                    match['id'],
+        session.add_all(
+            [Match(
+                match_id=match['id'],
+                createdAt=datetime.datetime.strptime(
                     match['attributes']['createdAt'][:-2],
-                    match['attributes']['duration'],
-                    match['attributes']['gameMode'],
-                    match['attributes']['mapName'],
-                    match['attributes']['isCustomMatch'],
-                    match['attributes']['seasonState'],
-                    match['attributes']['shardId']
-                    )
-                )
-        self.commit()
-        self.disconnect()
+                    '%Y-%m-%dT%H:%M:%S'
+                ),
+                duration=match['attributes']['duration'],
+                gameMode=match['attributes']['gameMode'],
+                mapName=match['attributes']['mapName'],
+                isCustomMatch=match['attributes']['isCustomMatch'],
+                seasonState=match['attributes']['seasonState'],
+                shardId=match['attributes']['shardId']
+            ) for match in matches]
+        )
+
+        session.commit()
 
         return True
 
     def insert_player_matches(self, players):
+        """
+        Drops the link between players and matches into the association table.
+        """
 
-        cursor = self.connect()
+        session = self.Session()
 
         for player in players:
             for match in player['relationships']['matches']['data']:
+
+
                 cursor.execute(
                     'insert into player_matches (player_id, match_id)\
                     values (%s, %s);',

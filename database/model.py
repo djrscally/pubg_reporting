@@ -25,6 +25,19 @@ season_matches = Table(
     Column('match_id', String, ForeignKey('matches.match_id'))
 )
 
+class SeasonMatches(Base):
+    """
+    Association table between seasons and matches
+    """
+
+    __tablename__ = 'player_matches'
+
+    season_id = Column(String, ForeignKey('seasons.season_id'))
+    season = relationship('Season', back_populates='matches')
+
+    match_id = Column(String, ForeignKey('matches.match_id'))
+    match = relationship('Match', back_populates='season')
+
 class Player(Base):
     """
     Defines the players
@@ -44,7 +57,13 @@ class Player(Base):
 
     seasons= relationship(
         'PlayerSeasonStats',
-        back_populates='players'
+        back_populates='player'
+    )
+
+    lifetime_stats = relationship(
+        'PlayerLifetimeStats',
+        uselist=False,
+        back_populates='player'
     )
 
     def __repr__(self):
@@ -68,7 +87,7 @@ class Season(Base):
 
     players = relationship(
         'PlayerSeasonStats',
-        back_populates='seasons'
+        back_populates='season'
     )
 
     def __repr__(self):
@@ -161,7 +180,7 @@ class PlayerSeasonStats(Base):
     def __repr__(self):
         return "<PlayerSeasonStats(season_id={0}, player_id={1})>".format(self.season_id, self.player_id)
 
-class PlayerLifetimeState(Base):
+class PlayerLifetimeStats(Base):
     """
     Placeholder
     """
@@ -171,7 +190,7 @@ class PlayerLifetimeState(Base):
     lifetime_stats_id = Column(Integer, primary_key=True, autoincrement=True)
 
     player_id = Column(String, ForeignKey('players.player_id'), nullable=False)
-    players = relationship('Player', back_populates='players')
+    player = relationship('Player', back_populates='lifetime_stats')
 
     assists = Column(Integer, nullable=False)
     bestRankPoint = Column(Integer, nullable=False)
