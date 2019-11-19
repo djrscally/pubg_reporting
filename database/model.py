@@ -14,29 +14,29 @@ Base = declarative_base()
 player_matches = Table(
     'player_matches',
     Base.metadata,
-    Column('player_id', String, ForeignKey('players.player_id')),
-    Column('match_id', String, ForeignKey('matches.match_id'))
+    Column('player_id', String(256), ForeignKey('players.player_id')),
+    Column('match_id', String(256), ForeignKey('matches.match_id'))
 )
 
 season_matches = Table(
     'season_matches',
     Base.metadata,
-    Column('season_id', String, ForeignKey('seasons.season_id')),
-    Column('match_id', String, ForeignKey('matches.match_id'))
+    Column('season_id', String(256), ForeignKey('seasons.season_id')),
+    Column('match_id', String(256), ForeignKey('matches.match_id'))
 )
 
-class SeasonMatches(Base):
-    """
-    Association table between seasons and matches
-    """
-
-    __tablename__ = 'player_matches'
-
-    season_id = Column(String, ForeignKey('seasons.season_id'))
-    season = relationship('Season', back_populates='matches')
-
-    match_id = Column(String, ForeignKey('matches.match_id'))
-    match = relationship('Match', back_populates='season')
+#class SeasonMatches(Base):
+#    """
+#    Association table between seasons and matches
+#    """
+#
+#    __tablename__ = 'player_matches'
+#
+#    season_id = Column(String, ForeignKey('seasons.season_id'))
+#    season = relationship('Season', back_populates='matches')
+#
+#    match_id = Column(String, ForeignKey('matches.match_id'))
+#    match = relationship('Match', back_populates='season')
 
 class Player(Base):
     """
@@ -45,9 +45,9 @@ class Player(Base):
 
     __tablename__ = 'players'
 
-    player_id = Column(String, primary_key=True, nullable=False)
-    player_name = Column(String, nullable=False)
-    shard_id = Column(String, nullable=False)
+    player_id = Column(String(256), primary_key=True, nullable=False)
+    player_name = Column(String(256), nullable=False)
+    shard_id = Column(String(256), nullable=False)
 
     matches = relationship(
         'Match',
@@ -81,7 +81,7 @@ class Season(Base):
 
     __tablename__ = 'seasons'
 
-    season_id = Column(String, primary_key=True, nullable=False)
+    season_id = Column(String(256), primary_key=True, nullable=False)
     is_current_season = Column(Boolean, nullable=False)
     is_off_season = Column(Boolean, nullable=False)
 
@@ -101,14 +101,14 @@ class Match(Base):
 
     __tablename__ = 'matches'
 
-    match_id = Column(String, primary_key=True, nullable=False)
+    match_id = Column(String(256), primary_key=True, nullable=False)
     createdAt = Column(DateTime, nullable=False)
     duration = Column(Integer, nullable=False)
-    gameMode = Column(String, nullable=False)
-    mapName = Column(String, nullable=False)
+    gameMode = Column(String(256), nullable=False)
+    mapName = Column(String(256), nullable=False)
     isCustomMatch = Column(Boolean, nullable=False)
-    seasonState = Column(String, nullable=False)
-    shardId = Column(String, nullable=False)
+    seasonState = Column(String(256), nullable=False)
+    shardId = Column(String(256), nullable=False)
 
     players = relationship(
         'Player',
@@ -132,15 +132,15 @@ class PlayerSeasonStats(Base):
 
     season_stats_id = Column(Integer, primary_key=True, autoincrement=True)
 
-    season_id = Column(String, ForeignKey('seasons.season_id'), nullable=False)
+    season_id = Column(String(256), ForeignKey('seasons.season_id'), nullable=False)
     season = relationship('Season', back_populates='players')
 
-    player_id = Column(String, ForeignKey('players.player_id'), nullable=False)
+    player_id = Column(String(256), ForeignKey('players.player_id'), nullable=False)
     player = relationship('Player', back_populates='seasons')
 
-    game_mode = Column(String, nullable=False)
+    game_mode = Column(String(256), nullable=False)
 
-    game_mode = Column(String, nullable=False)
+    game_mode = Column(String(256), nullable=False)
     assists = Column(Integer, nullable=False)
     bestRankPoint = Column(Integer, nullable=False)
     boosts = Column(Integer, nullable=False)
@@ -189,7 +189,7 @@ class PlayerLifetimeStats(Base):
 
     lifetime_stats_id = Column(Integer, primary_key=True, autoincrement=True)
 
-    player_id = Column(String, ForeignKey('players.player_id'), nullable=False)
+    player_id = Column(String(256), ForeignKey('players.player_id'), nullable=False)
     player = relationship('Player', back_populates='lifetime_stats')
 
     assists = Column(Integer, nullable=False)

@@ -7,6 +7,8 @@ from .model import Player, Match
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
+from .model import Player, Match, Season
+from sqlalchemy.dialects.mysql import insert
 
 class PUBGDatabaseConnector:
 
@@ -21,63 +23,80 @@ class PUBGDatabaseConnector:
 
         return None
 
-    def flush_db(self):
-
-        cursor = self.connect()
-
-        cursor.execute(
-            'call pFlushData;'
-        )
-
-        self.commit()
-        self.disconnect()
-
-        return None
-
-    def insert_players(self, players):
+    def upsert_players(self, players):
         """
-        Drop all the players into the players table.
+        Inserts or Updates Players
         """
 
-        session = self.Session()
+        conn = self.engine.connect()
+        trans = conn.begin()
 
-        session.add_all(
-            [Player(
-                player_id=player['id'],
-                player_name=player['attributes']['name'],
-                shard_id=player['attributes']['shardId']
-            ) for player in players]
-        )
+        try:
+            for player in players:
+                insert_stmt = insert(Player).values(
+                    player_id=player['id'],
+                    player_name=player['attributes']['name'],
+                    shard_id=player['attributes']['shardId']
+                )
 
-        session.commit()
+                merge_stmt = insert_stmt.on_duplicate_key_update(
+                    player_id=insert_stmt.inserted.player_id,
+                    player_name=insert_stmt.inserted.player_name,
+                    shard_id=insert_stmt.inserted.shard_id,
+                    status='U'
+                )
+
+                conn.execute(merge_stmt)
+            trans.commit()
+        except:
+            trans.rollback()
+
+        conn.close()
 
         return True
 
-    def insert_matches(self, matches):
+    def upsert_matches(self, matches):
         """
         Takes matches from the API output and adds them as Match() objects to
         the ORM.
         """
 
-        session = self.Session()
+        conn = self.engine.connect()
+        trans = conn.begin()
 
-        session.add_all(
-            [Match(
-                match_id=match['id'],
-                createdAt=datetime.datetime.strptime(
-                    match['attributes']['createdAt'][:-2],
-                    '%Y-%m-%dT%H:%M:%S'
-                ),
-                duration=match['attributes']['duration'],
-                gameMode=match['attributes']['gameMode'],
-                mapName=match['attributes']['mapName'],
-                isCustomMatch=match['attributes']['isCustomMatch'],
-                seasonState=match['attributes']['seasonState'],
-                shardId=match['attributes']['shardId']
-            ) for match in matches]
-        )
+        try:
+            for match in matches:
+                insert_stmt = insert(Match).values(
+                    match_id=match['id'],
+                    createdAt=datetime.datetime.strptime(
+                        match['attributes']['createdAt'][:-2],
+                        '%Y-%m-%dT%H:%M:%S'
+                    ),
+                    duration=match['attributes']['duration'],
+                    gameMode=match['attributes']['gameMode'],
+                    mapName=match['attributes']['mapName'],
+                    isCustomMatch=match['attributes']['isCustomMatch'],
+                    seasonState=match['attributes']['seasonState'],
+                    shardId=match['attributes']['shardId']
+                )
 
-        session.commit()
+                merge_stmt = insert_stmt.on_duplicate_key_update(
+                    match_id=insert_stmt.inserted.match_id,
+                    createdAt=insert_stmt.inserted.createdAt,
+                    duration=insert_stmt.inserted.duration,
+                    gameMode=insert_stmt.inserted.gameMode,
+                    mapName=insert_stmt.inserted.mapName,
+                    isCustomMatch=insert_stmt.inserted.isCustomMatch,
+                    seasonState=insert_stmt.inserted.seasonState,
+                    shardId=insert_stmt.inserted.shardId
+                )
+
+                conn.execute(merge_stmt)
+            trans.commit()
+        except:
+            trans.rollback()
+
+        conn.close()
 
         return True
 
@@ -102,33 +121,36 @@ class PUBGDatabaseConnector:
 
         return True
 
-    def insert_seasons(self, seasons):
+    def upsert_seasons(self, seasons):
+        """
+        Insert season data
+        """
 
-        cursor = self.connect()
+        conn = self.engine.connect()
+        trans = conn.begin()
 
-        for season in seasons:
-            cursor.execute(
-                'insert into seasons values (%s, %s, %s);',
-                (
-                    season['id'],
-                    season['attributes']['isCurrentSeason'],
-                    season['attributes']['isOffseason']
+        try:
+            for season in seasons:
+                insert_stmt = insert(Season).values(
+                    season_id=season['id'],
+                    is_current_season=season['attributes']['isCurrentSeason'],
+                    is_off_season=season['attributes']['isOffseason']
                 )
-            )
 
-        self.commit()
-        self.disconnect()
+                merge_stmt = insert_stmt.on_duplicate_key_update(
+                    season_id=insert_stmt.inserted.season_id,
+                    is_current_season=insert_stmt.inserted.is_current_season,
+                    is_off_season=insert_stmt.inserted.is_off_season
+                )
+
+                conn.execute(merge_stmt)
+            trans.commit()
+        except:
+            trans.rollback()
+
+        conn.close()
 
         return True
-
-    def select_season_updated_on(self):
-        """
-        This fetches the date the season was last updated from the databases
-        administration table, just so we can check if it's less than a month
-        old to avoid angering the API people.
-        """
-
-        return None
 
     def insert_player_season_stats(self, player_season_stats):
         """

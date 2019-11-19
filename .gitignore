@@ -4,3 +4,4 @@ majorclagnut.py
 ./database/*.pyc
 *.db
 database/__pycache__/
+/venv
