@@ -112,7 +112,7 @@ class pubg_api:
 
                 while r.status_code == 429:
                     time.sleep(20)
-                    
+
                     r = requests.get(
                         self.base_url + module,
                         headers=self.headers

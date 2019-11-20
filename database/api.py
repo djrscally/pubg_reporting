@@ -7,7 +7,7 @@ from .model import Player, Match
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
-from .model import Player, Match, Season
+from .model import Player, Match, Season, PlayerMatches, PlayerSeasonStats
 from sqlalchemy.dialects.mysql import insert
 
 class PUBGDatabaseConnector:
@@ -100,24 +100,34 @@ class PUBGDatabaseConnector:
 
         return True
 
-    def insert_player_matches(self, players):
+    def upsert_player_matches(self, players):
         """
         Drops the link between players and matches into the association table.
         """
 
-        session = self.Session()
+        conn = self.engine.connect()
+        trans = conn.begin()
 
-        for player in players:
-            for match in player['relationships']['matches']['data']:
+        try:
+            for player in players:
+                for match in player['relationships']['matches']['data']:
+                    insert_stmt = insert(PlayerMatches).values(
+                        player_id=player['id'],
+                        match_id=match['id']
+                    )
 
+                    merge_stmt = insert_stmt.on_duplicate_key_update(
+                        player_id=insert_stmt.inserted.player_id,
+                        match_id=insert_stmt.inserted.match_id
+                    )
 
-                cursor.execute(
-                    'insert into player_matches (player_id, match_id)\
-                    values (%s, %s);',
-                    (player['id'], match['id'])
-                )
-        self.commit()
-        self.disconnect()
+                    conn.execute(merge_stmt)
+
+            trans.commit()
+        except:
+            trans.rollback()
+
+        conn.close()
 
         return True
 
@@ -152,108 +162,110 @@ class PUBGDatabaseConnector:
 
         return True
 
-    def insert_player_season_stats(self, player_season_stats):
+    def upsert_player_season_stats(self, player_season_stats):
         """
         The SQL Statement here is irritatingly long-ass but it's a big table
         and I don't know how else to let the season_stats_id primary key do its
         auto-increment thing so "ASCII SHRUG"
         """
 
-        cursor = self.connect()
+        conn = self.engine.connect()
+        trans = conn.begin()
 
-        for player_season in player_season_stats:
-            for game_mode in player_season['attributes']['gameModeStats'].keys():
-                cursor.execute(
-                    'insert into player_season_stats \
-                        (\
-                            season_id\
-                            , player_id\
-                            , game_mode\
-                            , assists\
-                            , bestRankPoint\
-                            , boosts\
-                            , dBNOs\
-                            , dailyKills\
-                            , damageDealt\
-                            , days\
-                            , dailyWins\
-                            , headshotKills\
-                            , heals\
-                            , killPoints\
-                            , kills\
-                            , longestKill\
-                            , longestTimeSurvived\
-                            , losses\
-                            , maxKillStreaks\
-                            , mostSurvivalTime\
-                            , rankPoints\
-                            , revives\
-                            , rideDistance\
-                            , roadKills\
-                            , roundMostKills\
-                            , roundsPlayed\
-                            , suicides\
-                            , swimDistance\
-                            , teamKills\
-                            , timeSurvived\
-                            , top10s\
-                            , vehicleDestroys\
-                            , walkDistance\
-                            , weaponsAcquired\
-                            , weeklyKills\
-                            , weeklyWins\
-                            , winPoints\
-                            , wins\
-                        ) values (\
-                            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\
-                            , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\
-                            , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\
-                            , %s\
-                        );', (
-                            player_season['relationships']['season']['data']['id'],
-                            player_season['relationships']['player']['data']['id'],
-                            game_mode,
-                            player_season['attributes']['gameModeStats'][game_mode]['assists'],
-                            player_season['attributes']['gameModeStats'][game_mode]['bestRankPoint'],
-                            player_season['attributes']['gameModeStats'][game_mode]['boosts'],
-                            player_season['attributes']['gameModeStats'][game_mode]['dBNOs'],
-                            player_season['attributes']['gameModeStats'][game_mode]['dailyKills'],
-                            player_season['attributes']['gameModeStats'][game_mode]['damageDealt'],
-                            player_season['attributes']['gameModeStats'][game_mode]['days'],
-                            player_season['attributes']['gameModeStats'][game_mode]['dailyWins'],
-                            player_season['attributes']['gameModeStats'][game_mode]['headshotKills'],
-                            player_season['attributes']['gameModeStats'][game_mode]['heals'],
-                            player_season['attributes']['gameModeStats'][game_mode]['killPoints'],
-                            player_season['attributes']['gameModeStats'][game_mode]['kills'],
-                            player_season['attributes']['gameModeStats'][game_mode]['longestKill'],
-                            player_season['attributes']['gameModeStats'][game_mode]['longestTimeSurvived'],
-                            player_season['attributes']['gameModeStats'][game_mode]['losses'],
-                            player_season['attributes']['gameModeStats'][game_mode]['maxKillStreaks'],
-                            player_season['attributes']['gameModeStats'][game_mode]['mostSurvivalTime'],
-                            player_season['attributes']['gameModeStats'][game_mode]['rankPoints'],
-                            player_season['attributes']['gameModeStats'][game_mode]['revives'],
-                            player_season['attributes']['gameModeStats'][game_mode]['rideDistance'],
-                            player_season['attributes']['gameModeStats'][game_mode]['roadKills'],
-                            player_season['attributes']['gameModeStats'][game_mode]['roundMostKills'],
-                            player_season['attributes']['gameModeStats'][game_mode]['roundsPlayed'],
-                            player_season['attributes']['gameModeStats'][game_mode]['suicides'],
-                            player_season['attributes']['gameModeStats'][game_mode]['swimDistance'],
-                            player_season['attributes']['gameModeStats'][game_mode]['teamKills'],
-                            player_season['attributes']['gameModeStats'][game_mode]['timeSurvived'],
-                            player_season['attributes']['gameModeStats'][game_mode]['top10s'],
-                            player_season['attributes']['gameModeStats'][game_mode]['vehicleDestroys'],
-                            player_season['attributes']['gameModeStats'][game_mode]['walkDistance'],
-                            player_season['attributes']['gameModeStats'][game_mode]['weaponsAcquired'],
-                            player_season['attributes']['gameModeStats'][game_mode]['weeklyKills'],
-                            player_season['attributes']['gameModeStats'][game_mode]['weeklyWins'],
-                            player_season['attributes']['gameModeStats'][game_mode]['winPoints'],
-                            player_season['attributes']['gameModeStats'][game_mode]['wins']
-                        )
-                )
-                self.commit()
-        self.disconnect()
+        try:
+            for player_season in player_season_stats:
+                for game_mode in player_season['attributes']['gameModeStats'].keys():
+                    insert_stmt = insert(PlayerSeasonStats).values(
+                        player_id=player_season['relationships']['season']['data']['id'],
+                        season_id=player_season['relationships']['player']['data']['id'],
+                        game_mode=game_mode,
+                        assists=player_season['attributes']['gameModeStats'][game_mode]['assists'],
+                        bestRankPoint=player_season['attributes']['gameModeStats'][game_mode]['bestRankPoint'],
+                        boosts=player_season['attributes']['gameModeStats'][game_mode]['boosts'],
+                        dBNOs=player_season['attributes']['gameModeStats'][game_mode]['dBNOs'],
+                        dailyKills=player_season['attributes']['gameModeStats'][game_mode]['dailyKills'],
+                        damageDealt=player_season['attributes']['gameModeStats'][game_mode]['damageDealt'],
+                        days=player_season['attributes']['gameModeStats'][game_mode]['days'],
+                        dailyWins=player_season['attributes']['gameModeStats'][game_mode]['dailyWins'],
+                        headshotKills=player_season['attributes']['gameModeStats'][game_mode]['headshotKills'],
+                        heals=player_season['attributes']['gameModeStats'][game_mode]['heals'],
+                        killPoints=player_season['attributes']['gameModeStats'][game_mode]['killPoints'],
+                        kills=player_season['attributes']['gameModeStats'][game_mode]['kills'],
+                        longestKill=player_season['attributes']['gameModeStats'][game_mode]['longestKill'],
+                        longestTimeSurvived=player_season['attributes']['gameModeStats'][game_mode]['longestTimeSurvived'],
+                        losses=player_season['attributes']['gameModeStats'][game_mode]['losses'],
+                        maxKillStreaks=player_season['attributes']['gameModeStats'][game_mode]['maxKillStreaks'],
+                        mostSurvivalTime=player_season['attributes']['gameModeStats'][game_mode]['mostSurvivalTime'],
+                        rankPoints=player_season['attributes']['gameModeStats'][game_mode]['rankPoints'],
+                        revives=player_season['attributes']['gameModeStats'][game_mode]['revives'],
+                        rideDistance=player_season['attributes']['gameModeStats'][game_mode]['rideDistance'],
+                        roadKills=player_season['attributes']['gameModeStats'][game_mode]['roadKills'],
+                        roundMostKills=player_season['attributes']['gameModeStats'][game_mode]['roundMostKills'],
+                        roundsPlayed=player_season['attributes']['gameModeStats'][game_mode]['roundsPlayed'],
+                        suicides=player_season['attributes']['gameModeStats'][game_mode]['suicides'],
+                        swimDistance=player_season['attributes']['gameModeStats'][game_mode]['swimDistance'],
+                        teamKills=player_season['attributes']['gameModeStats'][game_mode]['teamKills'],
+                        timeSurvived=player_season['attributes']['gameModeStats'][game_mode]['timeSurvived'],
+                        top10s=player_season['attributes']['gameModeStats'][game_mode]['top10s'],
+                        vehicleDestroys=player_season['attributes']['gameModeStats'][game_mode]['vehicleDestroys'],
+                        walkDistance=player_season['attributes']['gameModeStats'][game_mode]['walkDistance'],
+                        weaponsAcquired=player_season['attributes']['gameModeStats'][game_mode]['weaponsAcquired'],
+                        weeklyKills=player_season['attributes']['gameModeStats'][game_mode]['weeklyKills'],
+                        weeklyWins=player_season['attributes']['gameModeStats'][game_mode]['weeklyWins'],
+                        winPoints=player_season['attributes']['gameModeStats'][game_mode]['winPoints'],
+                        wins=player_season['attributes']['gameModeStats'][game_mode]['wins']
+                    )
 
-        return None
+                    merge_stmt = insert_stmt.on_duplicate_key_update(
+                        player_id=insert_stmt.inserted.player_id,
+                        season_id=insert_stmt.inserted.season_id,
+                        game_mode=insert_stmt.inserted.game_mode,
+                        assists=insert_stmt.inserted.assists,
+                        bestRankPoint=insert_stmt.inserted.bestRankPoint,
+                        boost=insert_stmt.inserted.boosts,
+                        dBNOs=insert_stmt.inserted.dBNOs,
+                        dailyKills=insert_stmt.inserted.dailyKills,
+                        damageDealt=insert_stmt.inserted.damageDealt,
+                        days=insert_stmt.inserted.days,
+                        dailyWins=insert_stmt.inserted.dailyWins,
+                        headshotKills=insert_stmt.inserted.headshotKills,
+                        heals=insert_stmt.inserted.heals,
+                        killPoints=insert_stmt.inserted.killPoints,
+                        kills=insert_stmt.inserted.kills,
+                        longestKill=insert_stmt.inserted.longestKill,
+                        longestTimeSurvived=insert_stmt.inserted.longestTimeSurvived,
+                        losses=insert_stmt.inserted.losses,
+                        maxKillStreaks=insert_stmt.inserted.maxKillStreaks,
+                        mostSurvivalTime=insert_stmt.inserted.mostSurvivalTime,
+                        rankPoints=insert_stmt.inserted.rankPoints,
+                        revives=insert_stmt.inserted.revives,
+                        rideDistance=insert_stmt.inserted.rideDistance,
+                        roadKills=insert_stmt.inserted.roadKills,
+                        roundMostKills=insert_stmt.inserted.roundMostKills,
+                        roundsPlayed=insert_stmt.inserted.roundsPlayed,
+                        suicides=insert_stmt.inserted.suicides,
+                        swimDistance=insert_stmt.inserted.swimDistance,
+                        teamKills=insert_stmt.inserted.teamKills,
+                        timeSurvived=insert_stmt.inserted.timeSurvived,
+                        top10s=insert_stmt.inserted.top10s,
+                        vehicleDestroys=insert_stmt.inserted.vehicleDestroys,
+                        walkDistance=insert_stmt.inserted.walkDistance,
+                        weaponsAcquired=insert_stmt.inserted.weaponsAcquired,
+                        weeklyKills=insert_stmt.inserted.weeklyKills,
+                        weeklyWins=insert_stmt.inserted.weeklyWins,
+                        winPoints=insert_stmt.inserted.winPoints,
+                        wins=insert_stmt.inserted.wins
+                    )
+
+                    conn.execute(merge_stmt)
+            trans.commit()
+        except Exception as e:
+            print(e)
+            trans.rollback()
+
+        conn.close()
+
+        return True
 
     def insert_player_lifetime_stats(self, player_lifetime_stats):
 

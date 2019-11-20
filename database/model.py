@@ -11,32 +11,31 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
-player_matches = Table(
-    'player_matches',
-    Base.metadata,
-    Column('player_id', String(256), ForeignKey('players.player_id')),
-    Column('match_id', String(256), ForeignKey('matches.match_id'))
-)
+class PlayerMatches(Base):
+    """
+    Association table linking players to matches
+    """
 
-season_matches = Table(
-    'season_matches',
-    Base.metadata,
-    Column('season_id', String(256), ForeignKey('seasons.season_id')),
-    Column('match_id', String(256), ForeignKey('matches.match_id'))
-)
+    __tablename__ = 'player_matches'
 
-#class SeasonMatches(Base):
-#    """
-#    Association table between seasons and matches
-#    """
-#
-#    __tablename__ = 'player_matches'
-#
-#    season_id = Column(String, ForeignKey('seasons.season_id'))
-#    season = relationship('Season', back_populates='matches')
-#
-#    match_id = Column(String, ForeignKey('matches.match_id'))
-#    match = relationship('Match', back_populates='season')
+    player_id = Column(String(256), ForeignKey('players.player_id'), primary_key=True)
+    player = relationship("Player", back_populates='matches')
+
+    match_id = Column(String(256), ForeignKey('matches.match_id'), primary_key=True)
+    match = relationship("Match", back_populates="player")
+
+class SeasonMatches(Base):
+    """
+    Association table linking seasons to matches
+    """
+
+    __tablename__ = 'season_matches'
+
+    season_id = Column(String(256), ForeignKey('seasons.season_id'), primary_key=True)
+    seasons = relationship('Season', back_populates='matches')
+
+    match_id = Column(String(256), ForeignKey('matches.match_id'), primary_key=True)
+    match = relationship('Match', back_populates='season')
 
 class Player(Base):
     """
@@ -51,8 +50,8 @@ class Player(Base):
 
     matches = relationship(
         'Match',
-        secondary=player_matches,
-    back_populates='players'
+        secondary=PlayerMatches,
+    back_populates='player'
     )
 
     seasons= relationship(
@@ -90,6 +89,12 @@ class Season(Base):
         back_populates='season'
     )
 
+    matches = relationship(
+        'Match',
+        secondary=SeasonMatches,
+        back_populates='season'
+    )
+
     def __repr__(self):
         return "<Season(season_id={0})".format(self.season_id)
 
@@ -110,10 +115,16 @@ class Match(Base):
     seasonState = Column(String(256), nullable=False)
     shardId = Column(String(256), nullable=False)
 
-    players = relationship(
+    player = relationship(
         'Player',
-        secondary=player_matches,
+        secondary=PlayerMatches,
         back_populates='matches'
+    )
+
+    season = relationship(
+        'Season',
+        secondary=SeasonMatches,
+        back_populates='match'
     )
 
     def __repr__(self):
@@ -130,12 +141,12 @@ class PlayerSeasonStats(Base):
 
     __tablename__ = 'player_season_stats'
 
-    season_stats_id = Column(Integer, primary_key=True, autoincrement=True)
+#    season_stats_id = Column(Integer, primary_key=True, autoincrement=True)
 
-    season_id = Column(String(256), ForeignKey('seasons.season_id'), nullable=False)
+    season_id = Column(String(256), ForeignKey('seasons.season_id'), primary_key=True)#nullable=False)
     season = relationship('Season', back_populates='players')
 
-    player_id = Column(String(256), ForeignKey('players.player_id'), nullable=False)
+    player_id = Column(String(256), ForeignKey('players.player_id'), primary_key=True)#nullable=False)
     player = relationship('Player', back_populates='seasons')
 
     game_mode = Column(String(256), nullable=False)

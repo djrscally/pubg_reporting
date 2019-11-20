@@ -6,8 +6,9 @@ import json
 import pymysql
 
 db_uri = 'mysql+pymysql://pubg_reporting:pubg_reporting@localhost/pubg'
+#db_uri = 'sqlite:///:memory:'
 
-pubgdb = PUBGDatabaseConnector(db_uri, echo=True)
+pubgdb = PUBGDatabaseConnector(db_uri)
 Base.metadata.create_all(pubgdb.engine)
 
 
@@ -23,3 +24,8 @@ pubgdb.upsert_seasons(api.seasons)
 
 api.get_matches()
 pubgdb.upsert_matches(api.matches)
+
+pubgdb.upsert_player_matches(api.players)
+
+api.get_player_season_stats()
+pubgdb.upsert_player_season_stats(api.player_season_stats)
