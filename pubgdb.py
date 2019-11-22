@@ -4,11 +4,17 @@ from database.api import PUBGDatabaseConnector
 from pubg.pubg_api import pubg_api
 import json
 import pymysql
+import os
 
-db_uri = 'mysql+pymysql://pubg_reporting:pubg_reporting@localhost/pubg'
+user = os.environ.get('PUBGDB_USERNAME')
+password = os.environ.get('PUBGDB_PASSWORD')
+host = os.environ.get('PUBGDB_HOST')
+database = os.environ.get('PUBGDB_DATABASE')
+
+db_uri = 'mysql+pymysql://{0}:{1}@{2}/{3}'.format(user, password, host, database)
 #db_uri = 'sqlite:///:memory:'
 
-pubgdb = PUBGDatabaseConnector(db_uri)
+pubgdb = PUBGDatabaseConnector(db_uri, echo=True)
 Base.metadata.create_all(pubgdb.engine)
 
 

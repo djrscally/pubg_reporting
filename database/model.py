@@ -141,15 +141,13 @@ class PlayerSeasonStats(Base):
 
     __tablename__ = 'player_season_stats'
 
-#    season_stats_id = Column(Integer, primary_key=True, autoincrement=True)
-
-    season_id = Column(String(256), ForeignKey('seasons.season_id'), primary_key=True)#nullable=False)
+    season_id = Column(String(256), ForeignKey('seasons.season_id'), primary_key=True)
     season = relationship('Season', back_populates='players')
 
-    player_id = Column(String(256), ForeignKey('players.player_id'), primary_key=True)#nullable=False)
+    player_id = Column(String(256), ForeignKey('players.player_id'), primary_key=True)
     player = relationship('Player', back_populates='seasons')
 
-    game_mode = Column(String(256), nullable=False)
+    game_mode = Column(String(256), nullable=False, primary_key=True)
 
     game_mode = Column(String(256), nullable=False)
     assists = Column(Integer, nullable=False)
@@ -198,10 +196,11 @@ class PlayerLifetimeStats(Base):
 
     __tablename__ = 'player_lifetime_stats'
 
-    lifetime_stats_id = Column(Integer, primary_key=True, autoincrement=True)
+    player_id = Column(String(256), ForeignKey('players.player_id'), primary_key=True)
+    game_mode = Column(String(256), nullable=False, primary_key=True)
 
-    player_id = Column(String(256), ForeignKey('players.player_id'), nullable=False)
     player = relationship('Player', back_populates='lifetime_stats')
+
 
     assists = Column(Integer, nullable=False)
     bestRankPoint = Column(Integer, nullable=False)
