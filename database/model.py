@@ -8,6 +8,7 @@ from sqlalchemy import \
     , ForeignKey\
     , Table
 from sqlalchemy.orm import relationship
+from sqlalchemy.schema import PrimaryKeyConstraint
 
 Base = declarative_base()
 
@@ -141,17 +142,16 @@ class PlayerSeasonStats(Base):
 
     __tablename__ = 'player_season_stats'
 
-    season_id = Column(String(256), ForeignKey('seasons.season_id'), primary_key=True)
+    season_id = Column(String(256), ForeignKey('seasons.season_id'))
     season = relationship('Season', back_populates='players')
 
-    player_id = Column(String(256), ForeignKey('players.player_id'), primary_key=True)
+    player_id = Column(String(256), ForeignKey('players.player_id'))
     player = relationship('Player', back_populates='seasons')
 
-    game_mode = Column(String(256), nullable=False, primary_key=True)
+    game_mode = Column(String(256))
 
     game_mode = Column(String(256), nullable=False)
     assists = Column(Integer, nullable=False)
-    bestRankPoint = Column(Integer, nullable=False)
     boosts = Column(Integer, nullable=False)
     dBNOs = Column(Integer, nullable=False)
     dailyKills = Column(Integer, nullable=False)
@@ -189,6 +189,13 @@ class PlayerSeasonStats(Base):
     def __repr__(self):
         return "<PlayerSeasonStats(season_id={0}, player_id={1})>".format(self.season_id, self.player_id)
 
+    # have to move the PK definition to table args or SQL Alchemy only seems
+    # to keep the first two.
+    __table_args__ = (
+        PrimaryKeyConstraint('player_id', 'season_id', 'game_mode'),
+        {},
+    )
+
 class PlayerLifetimeStats(Base):
     """
     Placeholder
@@ -201,9 +208,7 @@ class PlayerLifetimeStats(Base):
 
     player = relationship('Player', back_populates='lifetime_stats')
 
-
     assists = Column(Integer, nullable=False)
-    bestRankPoint = Column(Integer, nullable=False)
     boosts = Column(Integer, nullable=False)
     dBNOs = Column(Integer, nullable=False)
     dailyKills = Column(Integer, nullable=False)

@@ -5,3 +5,4 @@ majorclagnut.py
 *.db
 database/__pycache__/
 /venv
+.envars

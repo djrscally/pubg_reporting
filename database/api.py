@@ -176,17 +176,18 @@ class PUBGDatabaseConnector:
         """
 
         conn = self.engine.connect()
-        trans = conn.begin()
+    #    trans = conn.begin()
 
         try:
             for player_season in player_season_stats:
                 for game_mode in player_season['attributes']['gameModeStats'].keys():
+                    trans = conn.begin()
                     insert_stmt = insert(PlayerSeasonStats).values(
-                        player_id=player_season['relationships']['season']['data']['id'],
-                        season_id=player_season['relationships']['player']['data']['id'],
+                        player_id=player_season['relationships']['player']['data']['id'],
+                        season_id=player_season['relationships']['season']['data']['id'],
                         game_mode=game_mode,
                         assists=player_season['attributes']['gameModeStats'][game_mode]['assists'],
-                        bestRankPoint=player_season['attributes']['gameModeStats'][game_mode]['bestRankPoint'],
+#                        bestRankPoint=player_season['attributes']['gameModeStats'][game_mode]['bestRankPoint'],
                         boosts=player_season['attributes']['gameModeStats'][game_mode]['boosts'],
                         dBNOs=player_season['attributes']['gameModeStats'][game_mode]['dBNOs'],
                         dailyKills=player_season['attributes']['gameModeStats'][game_mode]['dailyKills'],
@@ -223,12 +224,12 @@ class PUBGDatabaseConnector:
                     )
 
                     merge_stmt = insert_stmt.on_duplicate_key_update(
-                        player_id=insert_stmt.inserted.player_id,
-                        season_id=insert_stmt.inserted.season_id,
-                        game_mode=insert_stmt.inserted.game_mode,
+#                        player_id=insert_stmt.inserted.player_id,
+#                        season_id=insert_stmt.inserted.season_id,
+#                        game_mode=insert_stmt.inserted.game_mode,
                         assists=insert_stmt.inserted.assists,
-                        bestRankPoint=insert_stmt.inserted.bestRankPoint,
-                        boost=insert_stmt.inserted.boosts,
+#                        bestRankPoint=insert_stmt.inserted.bestRankPoint,
+                        boosts=insert_stmt.inserted.boosts,
                         dBNOs=insert_stmt.inserted.dBNOs,
                         dailyKills=insert_stmt.inserted.dailyKills,
                         damageDealt=insert_stmt.inserted.damageDealt,
@@ -264,15 +265,16 @@ class PUBGDatabaseConnector:
                     )
 
                     conn.execute(merge_stmt)
-            trans.commit()
+                    trans.commit()
         except Exception as e:
+            print(e)
             trans.rollback()
 
         conn.close()
 
         return True
 
-    def insert_player_lifetime_stats(self, player_lifetime_stats):
+    def upsert_player_lifetime_stats(self, player_lifetime_stats):
 
         conn = self.engine.connect()
         trans = conn.begin()
@@ -284,7 +286,6 @@ class PUBGDatabaseConnector:
                         player_id=lifetime_stats['relationships']['player']['data']['id'],
                         game_mode=game_mode,
                         assists=lifetime_stats['attributes']['gameModeStats'][game_mode]['assists'],
-                        bestRankPoint=lifetime_stats['attributes']['gameModeStats'][game_mode]['bestRankPoint'],
                         boosts=lifetime_stats['attributes']['gameModeStats'][game_mode]['boosts'],
                         dBNOs=lifetime_stats['attributes']['gameModeStats'][game_mode]['dBNOs'],
                         dailyKills=lifetime_stats['attributes']['gameModeStats'][game_mode]['dailyKills'],
@@ -323,7 +324,6 @@ class PUBGDatabaseConnector:
                     merge_stmt = insert_stmt.on_duplicate_key_update(
                         game_mode=insert_stmt.inserted.game_mode,
                         assists=insert_stmt.inserted.assists,
-                        bestRankPoint=insert_stmt.inserted.bestRankPoint,
                         boost=insert_stmt.inserted.boosts,
                         dBNOs=insert_stmt.inserted.dBNOs,
                         dailyKills=insert_stmt.inserted.dailyKills,
@@ -362,6 +362,7 @@ class PUBGDatabaseConnector:
                     conn.execute(merge_stmt)
             trans.commit()
         except Exception as e:
+            print(e)
             trans.rollback()
 
         conn.close()

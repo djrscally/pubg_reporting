@@ -35,3 +35,6 @@ pubgdb.upsert_player_matches(api.players)
 
 api.get_player_season_stats()
 pubgdb.upsert_player_season_stats(api.player_season_stats)
+
+api.get_player_lifetime_stats()
+pubgdb.upsert_player_lifetime_stats(api.player_lifetime_stats)

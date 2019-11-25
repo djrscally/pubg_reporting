@@ -14,9 +14,7 @@ class pubg_api:
             'Accept': 'application/vnd.api+json'
         }
 
-        self.base_url = 'https://api.pubg.com/shards/{0}'.format(
-            config['shard']
-        )
+        self.base_url = 'https://api.pubg.com/shards/'
 
         self.player_names = config['players']
         self.matches = []
@@ -28,12 +26,13 @@ class pubg_api:
 
     def get_players(self):
 
+        shard = 'xbox-eu'
         module = '/players'
         payload = {'filter[playerNames]': ','.join(self.player_names)
         }
 
         r = requests.get(
-            self.base_url + module,
+            self.base_url + shard + module,
             headers=self.headers,
             params=payload
             )
@@ -62,10 +61,11 @@ class pubg_api:
         Fetch a single match by calling the PUBG API, and return the json
         """
 
+        shard = 'xbox-eu'
         module = '/matches/{0}'.format(match_id)
 
         r = requests.get(
-            self.base_url + module,
+            self.base_url + shard + module,
             headers=self.headers
         )
 
@@ -79,10 +79,11 @@ class pubg_api:
         the time-last-called is more than 1 month ago.
         """
 
+        shard = 'xbox-eu'
         module = '/seasons'
 
         r = requests.get(
-            self.base_url + module,
+            self.base_url + shard + module,
             headers=self.headers
         )
 
@@ -98,6 +99,8 @@ class pubg_api:
         include a condition to pause for 20 seconds if it hits the issue.
         """
 
+        shard = 'xbox-eu'
+
         for player in self.players:
             for season in self.seasons:
                 module ='/players/{0}/seasons/{1}'.format(
@@ -106,7 +109,7 @@ class pubg_api:
                 )
 
                 r = requests.get(
-                    self.base_url + module,
+                    self.base_url + shard + module,
                     headers=self.headers
                 )
 
@@ -114,7 +117,7 @@ class pubg_api:
                     time.sleep(20)
 
                     r = requests.get(
-                        self.base_url + module,
+                        self.base_url + shard + module,
                         headers=self.headers
                     )
 
@@ -128,13 +131,15 @@ class pubg_api:
 
     def get_player_lifetime_stats(self):
 
+        shard = 'xbox-eu'
+
         for player in self.players:
             module = '/players/{0}/seasons/lifetime'.format(
                 player['id']
             )
 
             r = requests.get(
-                self.base_url + module,
+                self.base_url + shard + module,
                 headers=self.headers
             )
 
