@@ -5,12 +5,13 @@ Class to manage the connections to the PUBG API
 import requests
 import json
 import time
+import os
 
 class pubg_api:
 
     def __init__(self, config):
         self.headers = {
-            'Authorization': config['api_key'],
+            'Authorization': os.environ.get('PUBG_API_KEY'),
             'Accept': 'application/vnd.api+json'
         }
 

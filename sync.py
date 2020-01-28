@@ -1,55 +1,45 @@
-from database.pubg_reporting_database import pubg_database
+from sqlalchemy import create_engine
+from database.model import Base, Player
+from database.api import PUBGDatabaseConnector
 from pubg.pubg_api import pubg_api
 import json
+import pymysql
+import os
 
-print("Loading config...")
+user = os.environ.get('PUBGDB_USERNAME')
+password = os.environ.get('PUBGDB_PASSWORD')
+host = os.environ.get('PUBGDB_HOST')
+database = os.environ.get('PUBGDB_DATABASE')
+
+db_uri = 'mysql+pymysql://{0}:{1}@{2}/{3}'.format(user, password, host, database)
+#db_uri = 'sqlite:///:memory:'
+
+pubgdb = PUBGDatabaseConnector(db_uri, echo=True)
+Base.metadata.create_all(pubgdb.engine)
+
+
 config = json.load(open('config.json'))
 
-print("Initialising database and api classes")
-try:
-    pdb = pubg_database(config)
-except Exception as e:
-    print("Error initialising database: ", e)
+api = pubg_api(config)
 
-try:
-    api = pubg_api(config)
-except Exception as e:
-    print("Error initialising api:",  e)
+api.get_players()
+pubgdb.upsert_players(api.players)
 
-try:
-    print("------ Beginning GET block ------")
-    print("Fetching seasons...")
-    api.get_seasons()
-    print("Fetching players...")
-    api.get_players()
-    print("Fetching matches...")
-    api.get_matches()
-    print("Fetching player\'s lifetime stats...")
-    api.get_player_lifetime_stats()
-    print("Fetching player\'s season stats...")
-    api.get_player_season_stats()
+api.get_seasons()
+pubgdb.upsert_seasons(api.seasons)
 
-except Exception as e:
-    print("Error fetching data from the API: ", e)
+api.get_matches()
+pubgdb.upsert_matches(api.matches)
 
-try:
-    print("------ Flushing Database ------")
-    pdb.flush_db()
-    print("------ Beginning INSERT block ------")
-    print("Inserting players...")
-    pdb.insert_players(api.players)
-    print("Inserting matches...")
-    pdb.insert_matches(api.matches)
-    print("Inserting seasons...")
-    pdb.insert_seasons(api.seasons)
-    print("Inserting player\'s matches...")
-    pdb.insert_player_matches(api.players)
-    print("Inserting player\'s season stats...")
-    pdb.insert_player_season_stats(api.player_season_stats)
-    print("Inserting player\'s lifetime stats...")
-    pdb.insert_player_lifetime_stats(api.player_lifetime_stats)
-except Exception as e:
-    print("Error inserting data to the database: ", e)
+pubgdb.upsert_player_matches(api.players)
+print("""
+============= Player Match Stats Start ===============
+""")
+pubgdb.upsert_player_match_stats(api.matches)
 
-# Exit nicely, no matter what.
-pdb.disconnect()
+api.get_player_season_stats()
+pubgdb.upsert_player_season_stats(api.player_season_stats)
+pubgdb.upsert_season_matches(api.player_season_stats)
+
+api.get_player_lifetime_stats()
+pubgdb.upsert_player_lifetime_stats(api.player_lifetime_stats)
