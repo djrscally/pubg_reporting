@@ -1,4 +1,8 @@
 config.json
 majorclagnut.py
-./pubg/*.pyc
-./database/*.pyc
+*.db
+/venv
+.envars
+**.pyc
+**/__pycache__/*
+**.pyc

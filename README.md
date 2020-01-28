@@ -26,16 +26,17 @@ Follow these mandatory pre-requisite steps:
 
   1. Make sure Python3 is installed.
   2. Make sure MySQL is installed
-  3. Make sure [jq](https://stedolan.github.io/jq/) is installed.
-  4. Make sure Python libraries [requests](http://docs.python-requests.org/en/master/) and the [MySQL Connector](https://dev.mysql.com/doc/connector-python/en/connector-python-installation.html) are installed
-  5. Create a MySQL user for the scripts to use. You can use an existing one obviously, but I'd suggest a dedicated user; never a bad idea to separate privileges. Once you've created the user in the mysql shell run `grant all on $(db_name).* to '$(db_user)'@'localhost';` and then `flush privileges;`. Replace $(db_name) and $(db_user) with the appropriate values that you've chosen
+  3. Create a MySQL user for the scripts to use. You can use an existing one obviously, but I'd suggest a dedicated user; never a bad idea to separate privileges. Once you've created the user in the mysql shell run `grant all on $(db_name).* to '$(db_user)'@'localhost';` and then `flush privileges;`. Replace $(db_name) and $(db_user) with the appropriate values that you've chosen
 
 Run these commands to get the files and move into the repo's directory, then run the install.sh script.
 
 ```  
 $ git clone https://github.com/djrscally/pubg_reporting
 $ cd pubg_reporting
-$ ./install.sh install
+$ python3 -m venv venv
+$ source ./venv/bin/activate
+$ (venv) pip3 install -r requirements.txt
+$ (venv) ./install.sh install
 ```
 
 The script will collect some information from you including the names of all the players
