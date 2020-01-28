@@ -12,8 +12,10 @@ from .model import\
     , Match\
     , Season\
     , PlayerMatches\
+    , SeasonMatches\
     , PlayerSeasonStats\
-    , PlayerLifetimeStats
+    , PlayerLifetimeStats\
+    , PlayerMatchStats
 from sqlalchemy.dialects.mysql import insert
 
 class PUBGDatabaseConnector:
@@ -72,6 +74,7 @@ class PUBGDatabaseConnector:
 
         try:
             for match in matches:
+                match = match['data']
                 insert_stmt = insert(Match).values(
                     match_id=match['id'],
                     createdAt=datetime.datetime.strptime(
@@ -137,6 +140,79 @@ class PUBGDatabaseConnector:
 
         return True
 
+    def upsert_player_match_stats(self, matches):
+        """
+        Drops in the per-match stats from the matches API endpoint into our
+        DB
+        """
+
+        conn = self.engine.connect()
+        trans = conn.begin()
+
+        try:
+            for match in matches:
+                for participant in match['included']:
+                    if participant['type'] != 'participant':
+                        continue
+                    else:
+                        insert_stmt = insert(PlayerMatchStats).values(
+                            player_id=participant['attributes']['stats']['playerId'],
+                            match_id=match['data']['id'],
+                            DBNOs=participant['attributes']['stats']['DBNOs'],
+                            assists=participant['attributes']['stats']['assists'],
+                            boosts=participant['attributes']['stats']['boosts'],
+                            damageDealt=participant['attributes']['stats']['damageDealt'],
+                            deathType=participant['attributes']['stats']['deathType'],
+                            headshotKills=participant['attributes']['stats']['headshotKills'],
+                            heals=participant['attributes']['stats']['heals'],
+                            killPlace=participant['attributes']['stats']['killPlace'],
+                            kills=participant['attributes']['stats']['kills'],
+                            longestKill=participant['attributes']['stats']['longestKill'],
+                            revives=participant['attributes']['stats']['revives'],
+                            rideDistance=participant['attributes']['stats']['rideDistance'],
+                            roadKills=participant['attributes']['stats']['roadKills'],
+                            swimDistance=participant['attributes']['stats']['swimDistance'],
+                            teamKills=participant['attributes']['stats']['teamKills'],
+                            timeSurvived=participant['attributes']['stats']['timeSurvived'],
+                            vehicleDestroys=participant['attributes']['stats']['vehicleDestroys'],
+                            walkDistance=participant['attributes']['stats']['walkDistance'],
+                            weaponsAcquired=participant['attributes']['stats']['weaponsAcquired'],
+                            winPlace=participant['attributes']['stats']['winPlace']
+                        )
+
+                        merge_stmt = insert_stmt.on_duplicate_key_update(
+                            DBNOs=insert_stmt.inserted.DBNOs,
+                            assists=insert_stmt.inserted.assists,
+                            boosts=insert_stmt.inserted.boosts,
+                            damageDealt=insert_stmt.inserted.damageDealt,
+                            deathType=insert_stmt.inserted.deathType,
+                            headshotKills=insert_stmt.inserted.headshotKills,
+                            heals=insert_stmt.inserted.heals,
+                            killPlace=insert_stmt.inserted.killPlace,
+                            kills=insert_stmt.inserted.kills,
+                            longestKill=insert_stmt.inserted.longestKill,
+                            revives=insert_stmt.inserted.revives,
+                            rideDistance=insert_stmt.inserted.rideDistance,
+                            roadKills=insert_stmt.inserted.roadKills,
+                            swimDistance=insert_stmt.inserted.swimDistance,
+                            teamKills=insert_stmt.inserted.teamKills,
+                            timeSurvived=insert_stmt.inserted.timeSurvived,
+                            vehicleDestroys=insert_stmt.inserted.vehicleDestroys,
+                            walkDistance=insert_stmt.inserted.walkDistance,
+                            weaponsAcquired=insert_stmt.inserted.weaponsAcquired,
+                            winPlace=insert_stmt.inserted.winPlace
+                        )
+
+                        conn.execute(merge_stmt)
+            trans.commit()
+        except Exception as e:
+            print(e)
+            trans.rollback()
+
+        conn.close()
+
+        return True
+
     def upsert_seasons(self, seasons):
         """
         Insert season data
@@ -168,15 +244,51 @@ class PUBGDatabaseConnector:
 
         return True
 
-    def upsert_player_season_stats(self, player_season_stats):
+    def upsert_season_matches(self, player_season_stats):
         """
-        The SQL Statement here is irritatingly long-ass but it's a big table
-        and I don't know how else to let the season_stats_id primary key do its
-        auto-increment thing so "ASCII SHRUG"
+        Upserts a list of season IDs and match IDs to work as an association tables
+        between the two. Bizarrely the only API endpoint with this information is
+        Player Season Stats, so that's where it comes from. Matches played in the
+        last 14 days only, so data is a wee bit sparse.
         """
 
         conn = self.engine.connect()
-    #    trans = conn.begin()
+
+        try:
+            for player_season in player_season_stats:
+                for relationship in player_season['relationships'].keys():
+                    if 'matches' in relationship:
+                        for match in player_season['relationships'][relationship]['data']:
+                            trans = conn.begin()
+                            insert_stmt = insert(SeasonMatches).values(
+                                season_id=player_season['relationships']['season']['data']['id'],
+                                match_id=match['id']
+                            )
+
+                            merge_stmt = insert_stmt.on_duplicate_key_update(
+                                season_id=insert_stmt.inserted.season_id,
+                                match_id=insert_stmt.inserted.match_id
+                            )
+
+                            conn.execute(merge_stmt)
+                            trans.commit()
+                    else:
+                        continue
+        except Exception as e:
+            print(e)
+            trans.rollback()
+
+        conn.close()
+
+        return True
+
+    def upsert_player_season_stats(self, player_season_stats):
+        """
+        The SQL Statement here is irritatingly long-ass but it's a big table
+        and I don't know how else to let the upsert do its thing so "ASCII SHRUG".
+        """
+
+        conn = self.engine.connect()
 
         try:
             for player_season in player_season_stats:
@@ -187,7 +299,6 @@ class PUBGDatabaseConnector:
                         season_id=player_season['relationships']['season']['data']['id'],
                         game_mode=game_mode,
                         assists=player_season['attributes']['gameModeStats'][game_mode]['assists'],
-#                        bestRankPoint=player_season['attributes']['gameModeStats'][game_mode]['bestRankPoint'],
                         boosts=player_season['attributes']['gameModeStats'][game_mode]['boosts'],
                         dBNOs=player_season['attributes']['gameModeStats'][game_mode]['dBNOs'],
                         dailyKills=player_season['attributes']['gameModeStats'][game_mode]['dailyKills'],
@@ -224,11 +335,7 @@ class PUBGDatabaseConnector:
                     )
 
                     merge_stmt = insert_stmt.on_duplicate_key_update(
-#                        player_id=insert_stmt.inserted.player_id,
-#                        season_id=insert_stmt.inserted.season_id,
-#                        game_mode=insert_stmt.inserted.game_mode,
                         assists=insert_stmt.inserted.assists,
-#                        bestRankPoint=insert_stmt.inserted.bestRankPoint,
                         boosts=insert_stmt.inserted.boosts,
                         dBNOs=insert_stmt.inserted.dBNOs,
                         dailyKills=insert_stmt.inserted.dailyKills,
@@ -267,7 +374,6 @@ class PUBGDatabaseConnector:
                     conn.execute(merge_stmt)
                     trans.commit()
         except Exception as e:
-            print(e)
             trans.rollback()
 
         conn.close()
@@ -362,7 +468,6 @@ class PUBGDatabaseConnector:
                     conn.execute(merge_stmt)
             trans.commit()
         except Exception as e:
-            print(e)
             trans.rollback()
 
         conn.close()

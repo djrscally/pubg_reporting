@@ -69,7 +69,7 @@ class pubg_api:
             headers=self.headers
         )
 
-        return r.json()['data']
+        return r.json()
 
     def get_seasons(self):
         """
@@ -86,7 +86,6 @@ class pubg_api:
             self.base_url + shard + module,
             headers=self.headers
         )
-
         self.seasons = r.json()['data']
 
         return None
@@ -142,6 +141,10 @@ class pubg_api:
                 self.base_url + shard + module,
                 headers=self.headers
             )
+
+#            print(module)
+#            print(player['id'])
+#               print(r.text)
 
             self.player_lifetime_stats.append(
                 r.json()['data']

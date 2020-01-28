@@ -2,6 +2,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import \
     Column\
     , Integer\
+    , Float\
     , String\
     , Boolean\
     , DateTime\
@@ -14,7 +15,7 @@ Base = declarative_base()
 
 class PlayerMatches(Base):
     """
-    Association table linking players to matches
+    Association table linking players to the matches they have played in
     """
 
     __tablename__ = 'player_matches'
@@ -25,9 +26,12 @@ class PlayerMatches(Base):
     match_id = Column(String(256), ForeignKey('matches.match_id'), primary_key=True)
     match = relationship("Match", back_populates="player")
 
+    def __repr__(self):
+        return "<PlayerMatches(player_id={0}, match_id={1})>".format(self.player_id, self.match_id)
+
 class SeasonMatches(Base):
     """
-    Association table linking seasons to matches
+    Association table linking seasons to the matches that occurred in them.
     """
 
     __tablename__ = 'season_matches'
@@ -38,9 +42,12 @@ class SeasonMatches(Base):
     match_id = Column(String(256), ForeignKey('matches.match_id'), primary_key=True)
     match = relationship('Match', back_populates='season')
 
+    def __repr__(self):
+        return "<SeasonMatch(season_id={0}, match_id={1})>".format(season_id, match_id)
+
 class Player(Base):
     """
-    Defines the players
+    Base class for Players. Basic info plus relationships to stats, matches and seasons
     """
 
     __tablename__ = 'players'
@@ -135,9 +142,51 @@ class Match(Base):
             self.mapName
         )
 
+class PlayerMatchStats(Base):
+    """
+    Stats for a single match per player
+    """
+
+    __tablename__ = 'player_match_stats'
+
+    player_id = Column(String(256), primary_key=True)
+
+    match_id = Column(String(256), ForeignKey('matches.match_id'), primary_key=True)
+
+    DBNOs = Column(Integer, nullable=False)
+    assists = Column(Integer, nullable=False)
+    boosts = Column(Integer, nullable=False)
+    damageDealt = Column(Float, nullable=False)
+    deathType = Column(String(64), nullable=False)
+    headshotKills = Column(Integer, nullable=False)
+    heals = Column(Integer, nullable=False)
+    killPlace = Column(Integer, nullable=False)
+    kills = Column(Integer, nullable=False)
+    longestKill = Column(Float, nullable=False)
+    revives = Column(Integer, nullable=False)
+    rideDistance = Column(Float, nullable=False)
+    roadKills = Column(Integer, nullable=False)
+    swimDistance = Column(Float, nullable=False)
+    teamKills = Column(Integer, nullable=False)
+    timeSurvived = Column(Float, nullable=False)
+    vehicleDestroys = Column(Integer, nullable=False)
+    walkDistance = Column(Float, nullable=False)
+    weaponsAcquired = Column(Integer, nullable=False)
+    winPlace = Column(Integer, nullable=False)
+
+    def __repr__(self):
+        return "<PlayerMatchStats(player_id={0}, match_id={1})>".format(
+            self.player_id,
+            self.match_id
+        )
+
+
+
 class PlayerSeasonStats(Base):
     """
-    Stats for a single season for a player
+    Stats for a single season, per player and game mode. I.E. there's a row for
+    each player, for each season they have played in, for each game-mode that
+    exists in PUBG
     """
 
     __tablename__ = 'player_season_stats'
@@ -155,31 +204,31 @@ class PlayerSeasonStats(Base):
     boosts = Column(Integer, nullable=False)
     dBNOs = Column(Integer, nullable=False)
     dailyKills = Column(Integer, nullable=False)
-    damageDealt = Column(Integer, nullable=False)
+    damageDealt = Column(Float, nullable=False)
     days = Column(Integer, nullable=False)
     dailyWins = Column(Integer, nullable=False)
     headshotKills = Column(Integer, nullable=False)
     heals = Column(Integer, nullable=False)
     killPoints = Column(Integer, nullable=False)
     kills = Column(Integer, nullable=False)
-    longestKill = Column(Integer, nullable=False)
-    longestTimeSurvived = Column(Integer, nullable=False)
+    longestKill = Column(Float, nullable=False)
+    longestTimeSurvived = Column(Float, nullable=False)
     losses = Column(Integer, nullable=False)
     maxKillStreaks = Column(Integer, nullable=False)
     mostSurvivalTime = Column(Integer, nullable=False)
     rankPoints = Column(Integer, nullable=False)
     revives = Column(Integer, nullable=False)
-    rideDistance = Column(Integer, nullable=False)
+    rideDistance = Column(Float, nullable=False)
     roadKills = Column(Integer, nullable=False)
     roundMostKills = Column(Integer, nullable=False)
     roundsPlayed = Column(Integer, nullable=False)
     suicides = Column(Integer, nullable=False)
-    swimDistance = Column(Integer, nullable=False)
+    swimDistance = Column(Float, nullable=False)
     teamKills = Column(Integer, nullable=False)
-    timeSurvived = Column(Integer, nullable=False)
+    timeSurvived = Column(Float, nullable=False)
     top10s = Column(Integer, nullable=False)
     vehicleDestroys = Column(Integer, nullable=False)
-    walkDistance = Column(Integer, nullable=False)
+    walkDistance = Column(Float, nullable=False)
     weaponsAcquired = Column(Integer, nullable=False)
     weeklyKills = Column(Integer, nullable=False)
     weeklyWins = Column(Integer, nullable=False)
@@ -187,7 +236,11 @@ class PlayerSeasonStats(Base):
     wins = Column(Integer, nullable=False)
 
     def __repr__(self):
-        return "<PlayerSeasonStats(season_id={0}, player_id={1})>".format(self.season_id, self.player_id)
+        return "<PlayerSeasonStats(season_id={0}, player_id={1}, game_mode={2})>".format(
+            self.season_id,
+            self.player_id,
+            self.game_mode
+        )
 
     # have to move the PK definition to table args or SQL Alchemy only seems
     # to keep the first two.
@@ -198,7 +251,7 @@ class PlayerSeasonStats(Base):
 
 class PlayerLifetimeStats(Base):
     """
-    Placeholder
+    Stats for a player's entire in-game lifetime, per game mode.
     """
 
     __tablename__ = 'player_lifetime_stats'
@@ -212,33 +265,39 @@ class PlayerLifetimeStats(Base):
     boosts = Column(Integer, nullable=False)
     dBNOs = Column(Integer, nullable=False)
     dailyKills = Column(Integer, nullable=False)
-    damageDealt = Column(Integer, nullable=False)
+    damageDealt = Column(Float, nullable=False)
     days = Column(Integer, nullable=False)
     dailyWins = Column(Integer, nullable=False)
     headshotKills = Column(Integer, nullable=False)
     heals = Column(Integer, nullable=False)
     killPoints = Column(Integer, nullable=False)
     kills = Column(Integer, nullable=False)
-    longestKill = Column(Integer, nullable=False)
-    longestTimeSurvived = Column(Integer, nullable=False)
+    longestKill = Column(Float, nullable=False)
+    longestTimeSurvived = Column(Float, nullable=False)
     losses = Column(Integer, nullable=False)
     maxKillStreaks = Column(Integer, nullable=False)
-    mostSurvivalTime = Column(Integer, nullable=False)
-    rankPoints = Column(Integer, nullable=False)
+    mostSurvivalTime = Column(Float, nullable=False)
+    rankPoints = Column(Float, nullable=False)
     revives = Column(Integer, nullable=False)
-    rideDistance = Column(Integer, nullable=False)
+    rideDistance = Column(Float, nullable=False)
     roadKills = Column(Integer, nullable=False)
     roundMostKills = Column(Integer, nullable=False)
     roundsPlayed = Column(Integer, nullable=False)
     suicides = Column(Integer, nullable=False)
-    swimDistance = Column(Integer, nullable=False)
+    swimDistance = Column(Float, nullable=False)
     teamKills = Column(Integer, nullable=False)
-    timeSurvived = Column(Integer, nullable=False)
+    timeSurvived = Column(Float, nullable=False)
     top10s = Column(Integer, nullable=False)
     vehicleDestroys = Column(Integer, nullable=False)
-    walkDistance = Column(Integer, nullable=False)
+    walkDistance = Column(Float, nullable=False)
     weaponsAcquired = Column(Integer, nullable=False)
     weeklyKills = Column(Integer, nullable=False)
     weeklyWins = Column(Integer, nullable=False)
     winPoints = Column(Integer, nullable=False)
     wins = Column(Integer, nullable=False)
+
+    def __repr__(self):
+        return "<PlayerLifetimeStats(player_id={0}, game_mode={1})>".format(
+            self.player_id,
+            self.game_mode
+        )
