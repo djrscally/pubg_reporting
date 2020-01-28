@@ -1,3 +1,14 @@
-mysql
-python3
-jq
+alembic==1.3.1
+certifi==2019.9.11
+chardet==3.0.4
+idna==2.8
+Mako==1.1.0
+MarkupSafe==1.1.1
+pkg-resources==0.0.0
+PyMySQL==0.9.3
+python-dateutil==2.8.1
+python-editor==1.0.4
+requests==2.22.0
+six==1.13.0
+SQLAlchemy==1.3.11
+urllib3==1.25.7
