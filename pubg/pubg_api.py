@@ -21,6 +21,7 @@ class pubg_api:
         self.matches = []
         self.player_season_stats = []
         self.player_lifetime_stats = []
+        self.players = []
 
         return None
 
@@ -29,16 +30,23 @@ class pubg_api:
 
         shard = 'xbox-eu'
         module = '/players'
-        payload = {'filter[playerNames]': ','.join(self.player_names)
-        }
 
-        r = requests.get(
-            self.base_url + shard + module,
-            headers=self.headers,
-            params=payload
-            )
+        i = 0
 
-        self.players = r.json()['data']
+        while i < len(self.player_names):
+
+            payload = {'filter[playerNames]': ','.join(self.player_names[i:i+10])
+            }
+
+            r = requests.get(
+                self.base_url + shard + module,
+                headers=self.headers,
+                params=payload
+                )
+
+            self.players = self.players + r.json()['data']
+
+            i += 10
 
         return True
 
