@@ -151,9 +151,13 @@ class pubg_api:
                 headers=self.headers
             )
 
-#            print(module)
-#            print(player['id'])
-#               print(r.text)
+            while r.status_code == 429:
+                time.sleep(20)
+
+                r = requests.get(
+                    self.base_url + shard + module,
+                    headers=self.headers
+                )
 
             self.player_lifetime_stats.append(
                 r.json()['data']
