@@ -17,8 +17,7 @@ db_uri = 'mysql+pymysql://{0}:{1}@{2}/{3}'.format(user, password, host, database
 pubgdb = PUBGDatabaseConnector(db_uri, echo=True)
 Base.metadata.create_all(pubgdb.engine)
 
-
-config = json.load(open('config.json'))
+config = json.load(open(os.environ.get('PUBGDB_CONFIG_PATH') + 'config.json'))
 
 api = pubg_api(config)
 
