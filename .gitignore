@@ -2,8 +2,10 @@ config.json
 majorclagnut.py
 *.db
 /venv
-.envars
+.envars*
 **.pyc
-**/__pycache__/*
+**/__pycache__/**
 **.pyc
 **__pycache__**
+.vscode/
+sync.profile

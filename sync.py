@@ -34,7 +34,7 @@ pubgdb.upsert_player_matches(api.players)
 print("""
 ============= Player Match Stats Start ===============
 """)
-pubgdb.upsert_player_match_stats(api.matches)
+pubgdb.upsert_player_match_stats(api.matches, api.players)
 
 api.get_player_season_stats()
 pubgdb.upsert_player_season_stats(api.player_season_stats)

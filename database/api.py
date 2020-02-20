@@ -140,7 +140,7 @@ class PUBGDatabaseConnector:
 
         return True
 
-    def upsert_player_match_stats(self, matches):
+    def upsert_player_match_stats(self, matches, players):
         """
         Drops in the per-match stats from the matches API endpoint into our
         DB
@@ -153,6 +153,10 @@ class PUBGDatabaseConnector:
             for match in matches:
                 for participant in match['included']:
                     if participant['type'] != 'participant':
+                        continue
+                    # this line skips those players who are match participants but not in our tracking list, and
+                    # this we don't care about them.
+                    elif participant['attributes']['stats']['playerId'] not in [player['id'] for player in players]:
                         continue
                     else:
                         insert_stmt = insert(PlayerMatchStats).values(
