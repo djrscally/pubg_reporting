@@ -105,9 +105,37 @@ class pubg_api:
         means it often hits the API's transaction limit and returns a html 429
         code. 4 second pauses between calls seems to avoid the issue, but I'll
         include a condition to pause for 20 seconds if it hits the issue.
+
+                
+        /seasons/{seasonId}/gameMode/{gameMode}/players
+        "https://api.pubg.com/shards/$platform/seasons/$seasonId/gameMode/$gameMode/players?filter[playerIds]=$playerId-1,$playerId-2" \
+
+        duo
+        duo-fpp
+        solo
+        solo-fpp
+        squad
+        squad-fpp
+
         """
 
         shard = 'xbox-eu'
+
+        game_modes = ['duo', 'duo-fpp', 'solo', 'solo-fpp', 'squad', 'squad-fpp']
+
+        for season in self.seasons:
+            for gm in game_modes:
+
+                i = 0
+
+                while i < len(self.players):
+                
+                module = '/seasons/{0}/gameMode/{1}/players?filter[playerIds]={2}'.format(season['id'], gm, ','.join(self.player_names[i:i+10])
+
+                r = requests.get(
+                    self.base_url + shard + module,
+                    headers=self.headers
+                )
 
         for player in self.players:
             for season in self.seasons:
