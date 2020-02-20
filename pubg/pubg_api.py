@@ -6,6 +6,8 @@ import requests
 import json
 import time
 import os
+import click
+import logging
 
 class pubg_api:
 
@@ -38,13 +40,21 @@ class pubg_api:
             payload = {'filter[playerNames]': ','.join(self.player_names[i:i+10])
             }
 
-            r = requests.get(
-                self.base_url + shard + module,
-                headers=self.headers,
-                params=payload
-                )
+            logging.debug("get_players:Payload = [{0}]".format(','.join(self.player_names[i:i+10])))
 
-            self.players = self.players + r.json()['data']
+            try:
+                r = requests.get(
+                    self.base_url + shard + module,
+                    headers=self.headers,
+                    params=payload
+                    )
+            except Exception as e:
+                logging.error("get_players: API Request: {0}".format(e.Message))
+
+            try:
+                self.players = self.players + r.json()['data']
+            except:
+                logging.error("get_players: Append to players: {0}".format(e.message))
 
             i += 10
 
@@ -55,13 +65,15 @@ class pubg_api:
 
         processed_matches = []
 
-        for player in self.players:
-            for match in player['relationships']['matches']['data']:
-                if match['id'] in processed_matches:
-                    continue
-                else:
-                    processed_matches.append(match['id'])
-                    self.matches.append(self.get_match(match['id']))
+        with click.progressbar(self.players, label="Iterating over players") as pbar:
+            for player in pbar:
+                with click.progressbar(player['relationships']['matches']['data'], label="Getting matches for player") as mbar:
+                    for match in mbar:
+                        if match['id'] in processed_matches:
+                            continue
+                        else:
+                            processed_matches.append(match['id'])
+                            self.matches.append(self.get_match(match['id']))
 
         return True
 
@@ -117,7 +129,7 @@ class pubg_api:
         squad
         squad-fpp
 
-        """
+
 
         shard = 'xbox-eu'
 
@@ -136,32 +148,36 @@ class pubg_api:
                     self.base_url + shard + module,
                     headers=self.headers
                 )
+        """
 
-        for player in self.players:
-            for season in self.seasons:
-                module ='/players/{0}/seasons/{1}'.format(
-                    player['id'],
-                    season['id']
-                )
+        shard = 'xbox-eu'
 
-                r = requests.get(
-                    self.base_url + shard + module,
-                    headers=self.headers
-                )
-
-                while r.status_code == 429:
-                    time.sleep(20)
+        with click.progressbar(self.players, label='Fetching Player Season Stats') as bar:
+            for player in bar:
+                for season in self.seasons:
+                    module ='/players/{0}/seasons/{1}'.format(
+                        player['id'],
+                        season['id']
+                    )
 
                     r = requests.get(
                         self.base_url + shard + module,
                         headers=self.headers
                     )
 
-                self.player_season_stats.append(
-                    r.json()['data']
-                )
+                    while r.status_code == 429:
+                        time.sleep(20)
 
-                time.sleep(5)
+                        r = requests.get(
+                            self.base_url + shard + module,
+                            headers=self.headers
+                        )
+
+                    self.player_season_stats.append(
+                        r.json()['data']
+                    )
+
+                    time.sleep(5)
 
         return None
 

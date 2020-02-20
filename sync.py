@@ -13,9 +13,15 @@ import logging
     '--log-level',
     'loglevel',
     type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']),
-    default='Warning',
+    default='WARNING',
     help='Level of detail to include in logs')
-def sync(loglevel):
+@click.option(
+    '--echo/--no-echo',
+    'echo',
+    default=False,
+    help='Echo SQL Alchemy output to stdout'
+)
+def sync(loglevel, echo):
 
     numeric_level = getattr(logging, loglevel.upper(), None)
     logging.basicConfig(filename='sync.log', filemode='w', level=numeric_level)
@@ -28,7 +34,7 @@ def sync(loglevel):
     db_uri = 'mysql+pymysql://{0}:{1}@{2}/{3}'.format(user, password, host, database)
     #db_uri = 'sqlite:///:memory:'
 
-    pubgdb = PUBGDatabaseConnector(db_uri)
+    pubgdb = PUBGDatabaseConnector(db_uri, echo)
     Base.metadata.create_all(pubgdb.engine)
 
     config = json.load(open(os.environ.get('PUBGDB_CONFIG_PATH') + 'config.json'))

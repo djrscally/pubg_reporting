@@ -17,6 +17,7 @@ from .model import\
     , PlayerLifetimeStats\
     , PlayerMatchStats
 from sqlalchemy.dialects.mysql import insert
+import click
 
 class PUBGDatabaseConnector:
 
@@ -26,7 +27,7 @@ class PUBGDatabaseConnector:
         more or less it.
         """
 
-        self.engine = create_engine(engine_uri, echo=True)
+        self.engine = create_engine(engine_uri, echo=echo)
         self.Session = sessionmaker(bind=self.engine)
 
         return None
