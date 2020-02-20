@@ -106,7 +106,7 @@ class pubg_api:
         code. 4 second pauses between calls seems to avoid the issue, but I'll
         include a condition to pause for 20 seconds if it hits the issue.
 
-                
+
         /seasons/{seasonId}/gameMode/{gameMode}/players
         "https://api.pubg.com/shards/$platform/seasons/$seasonId/gameMode/$gameMode/players?filter[playerIds]=$playerId-1,$playerId-2" \
 
@@ -129,7 +129,7 @@ class pubg_api:
                 i = 0
 
                 while i < len(self.players):
-                
+
                 module = '/seasons/{0}/gameMode/{1}/players?filter[playerIds]={2}'.format(season['id'], gm, ','.join(self.player_names[i:i+10])
 
                 r = requests.get(

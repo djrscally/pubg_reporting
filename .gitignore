@@ -9,3 +9,4 @@ majorclagnut.py
 **__pycache__**
 .vscode/
 sync.profile
+sync.log

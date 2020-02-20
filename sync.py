@@ -28,7 +28,7 @@ def sync(loglevel):
     db_uri = 'mysql+pymysql://{0}:{1}@{2}/{3}'.format(user, password, host, database)
     #db_uri = 'sqlite:///:memory:'
 
-    pubgdb = PUBGDatabaseConnector(db_uri, echo=True)
+    pubgdb = PUBGDatabaseConnector(db_uri)
     Base.metadata.create_all(pubgdb.engine)
 
     config = json.load(open(os.environ.get('PUBGDB_CONFIG_PATH') + 'config.json'))
@@ -37,29 +37,41 @@ def sync(loglevel):
     __sync(api, pubgdb)
 
 def __sync(api, pubgdb):
-    logging.debug("Beginning get_players() call")
+    logging.info("Beginning sync run")
+
+    logging.info("Beginning get_players() call")
     api.get_players()
-    logging.debug("Completed get_players() call")
+    logging.info("Beginning upsert_players() call")
     pubgdb.upsert_players(api.players)
 
+    logging.info("Beginning get_seasons() call")
     api.get_seasons()
+    logging.info("Beginning upsert_seasons() call")
     pubgdb.upsert_seasons(api.seasons)
 
+    logging.info("Beginning get_matches() call")
     api.get_matches()
+    logging.info("Beginning upsert_matches() call")
     pubgdb.upsert_matches(api.matches)
 
+    logging.info("Beginning upsert_player_matches() call")
     pubgdb.upsert_player_matches(api.players)
-    print("""
-    ============= Player Match Stats Start ===============
-    """)
+    logging.info("Beginning upsert_player_match_stats() call")
     pubgdb.upsert_player_match_stats(api.matches, api.players)
 
+    logging.info("Beginning get_player_season_stats() call")
     api.get_player_season_stats()
+    logging.info("Beginning upsert_player_season_stats() call")
     pubgdb.upsert_player_season_stats(api.player_season_stats)
+    logging.info("Beginning upsert_season_matches() call")
     pubgdb.upsert_season_matches(api.player_season_stats)
 
+    logging.info("Beginning get_player_lifetime_stats() call")
     api.get_player_lifetime_stats()
+    logging.info("Beginning upsert_player_lifetime_stats() call")
     pubgdb.upsert_player_lifetime_stats(api.player_lifetime_stats)
+
+    logging.info("Sync run complete")
 
 if __name__=='__main__':
 
