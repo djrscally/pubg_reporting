@@ -6,6 +6,7 @@ import requests
 import json
 import time
 import os
+import multiprocessing
 
 class pubg_api:
 
@@ -61,13 +62,16 @@ class pubg_api:
                     continue
                 else:
                     processed_matches.append(match['id'])
-                    self.matches.append(self.get_match(match['id']))
+        
+        with multiprocessing.Pool() as pool:
+            pool.map(self.get_match, processed_matches)
 
         return True
 
     def get_match(self, match_id):
         """
-        Fetch a single match by calling the PUBG API, and return the json
+        Fetch a single match by calling the PUBG API, and append it to the list
+        of matches
         """
 
         shard = 'xbox-eu'
@@ -78,7 +82,9 @@ class pubg_api:
             headers=self.headers
         )
 
-        return r.json()
+        self.matches.append(r.json())
+
+        return True
 
     def get_seasons(self):
         """
@@ -99,6 +105,13 @@ class pubg_api:
 
         return None
 
+    def get_current_season(self):
+        """
+        Returns the current season only from the cached list of seasons
+        """
+
+        return [season for season in self.seasons if season['attributes']['isCurrentSeason']]
+
     def get_player_season_stats(self):
         """
         This call has to be rate limited, as it's pretty fast to complete which
@@ -117,28 +130,34 @@ class pubg_api:
         squad
         squad-fpp
 
-        """
+        
 
         shard = 'xbox-eu'
 
         game_modes = ['duo', 'duo-fpp', 'solo', 'solo-fpp', 'squad', 'squad-fpp']
 
         for season in self.seasons:
+
             for gm in game_modes:
 
                 i = 0
 
                 while i < len(self.players):
                 
-                module = '/seasons/{0}/gameMode/{1}/players?filter[playerIds]={2}'.format(season['id'], gm, ','.join(self.player_names[i:i+10])
+                module = '/seasons/{0}/gameMode/{1}/players?filter[playerIds]={2}'.format(season['id'], gm, ','.join([p['id'] for p in self.players[i:i+10]])
 
                 r = requests.get(
                     self.base_url + shard + module,
                     headers=self.headers
                 )
 
+        """
+        shard = 'xbox=eu'
+
         for player in self.players:
-            for season in self.seasons:
+            for season in self.get_current_season():
+
+
                 module ='/players/{0}/seasons/{1}'.format(
                     player['id'],
                     season['id']
