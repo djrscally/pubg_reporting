@@ -8,4 +8,4 @@ majorclagnut.py
 **.pyc
 **__pycache__**
 .vscode/
-sync.profile
+*.profile
