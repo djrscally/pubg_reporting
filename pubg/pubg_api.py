@@ -7,6 +7,7 @@ import json
 import time
 import os
 import multiprocessing
+import logging
 
 class pubg_api:
 
@@ -39,13 +40,21 @@ class pubg_api:
             payload = {'filter[playerNames]': ','.join(self.player_names[i:i+10])
             }
 
-            r = requests.get(
-                self.base_url + shard + module,
-                headers=self.headers,
-                params=payload
-                )
+            logging.debug("get_players:Payload = [{0}]".format(','.join(self.player_names[i:i+10])))
 
-            self.players = self.players + r.json()['data']
+            try:
+                r = requests.get(
+                    self.base_url + shard + module,
+                    headers=self.headers,
+                    params=payload
+                    )
+            except Exception as e:
+                logging.error("get_players: API Request: {0}".format(e.Message))
+
+            try:
+                self.players = self.players + r.json()['data']
+            except:
+                logging.error("get_players: Append to players: {0}".format(e.message))
 
             i += 10
 
@@ -73,14 +82,18 @@ class pubg_api:
         Fetch a single match by calling the PUBG API, and append it to the list
         of matches
         """
+        logging.debug("get_match: match_id={0}".format(match_id))
 
         shard = 'xbox-eu'
         module = '/matches/{0}'.format(match_id)
 
-        r = requests.get(
-            self.base_url + shard + module,
-            headers=self.headers
-        )
+        try:
+            r = requests.get(
+                self.base_url + shard + module,
+                headers=self.headers
+            )
+        except Exception as e:
+            logging.error("get_match: API Request: {0}".format(e.Message))
 
         self.matches.append(r.json())
 
@@ -112,75 +125,42 @@ class pubg_api:
 
         return [season for season in self.seasons if season['attributes']['isCurrentSeason']]
 
-    def get_player_season_stats(self):
+    def get_player_season_stats(self, combo):
         """
         This call has to be rate limited, as it's pretty fast to complete which
         means it often hits the API's transaction limit and returns a html 429
         code. 4 second pauses between calls seems to avoid the issue, but I'll
         include a condition to pause for 20 seconds if it hits the issue.
 
-                
-        /seasons/{seasonId}/gameMode/{gameMode}/players
-        "https://api.pubg.com/shards/$platform/seasons/$seasonId/gameMode/$gameMode/players?filter[playerIds]=$playerId-1,$playerId-2" \
-
-        duo
-        duo-fpp
-        solo
-        solo-fpp
-        squad
-        squad-fpp
+        combo is a (player_id, season_id) tuple
+        """
 
         
-
         shard = 'xbox-eu'
 
-        game_modes = ['duo', 'duo-fpp', 'solo', 'solo-fpp', 'squad', 'squad-fpp']
+        module ='/players/{0}/seasons/{1}'.format(
+            combo[0],
+            combo[1]
+        )
 
-        for season in self.seasons:
+        r = requests.get(
+            self.base_url + shard + module,
+            headers=self.headers
+        )
 
-            for gm in game_modes:
+        while r.status_code == 429:
+            time.sleep(20)
 
-                i = 0
+            r = requests.get(
+                self.base_url + shard + module,
+                headers=self.headers
+            )
 
-                while i < len(self.players):
-                
-                module = '/seasons/{0}/gameMode/{1}/players?filter[playerIds]={2}'.format(season['id'], gm, ','.join([p['id'] for p in self.players[i:i+10]])
+        self.player_season_stats.append(
+            r.json()['data']
+        )
 
-                r = requests.get(
-                    self.base_url + shard + module,
-                    headers=self.headers
-                )
-
-        """
-        shard = 'xbox=eu'
-
-        for player in self.players:
-            for season in self.get_current_season():
-
-
-                module ='/players/{0}/seasons/{1}'.format(
-                    player['id'],
-                    season['id']
-                )
-
-                r = requests.get(
-                    self.base_url + shard + module,
-                    headers=self.headers
-                )
-
-                while r.status_code == 429:
-                    time.sleep(20)
-
-                    r = requests.get(
-                        self.base_url + shard + module,
-                        headers=self.headers
-                    )
-
-                self.player_season_stats.append(
-                    r.json()['data']
-                )
-
-                time.sleep(5)
+        time.sleep(5)
 
         return None
 

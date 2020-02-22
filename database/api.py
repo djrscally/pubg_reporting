@@ -17,6 +17,7 @@ from .model import\
     , PlayerLifetimeStats\
     , PlayerMatchStats
 from sqlalchemy.dialects.mysql import insert
+import logging
 
 class PUBGDatabaseConnector:
 
@@ -26,7 +27,7 @@ class PUBGDatabaseConnector:
         more or less it.
         """
 
-        self.engine = create_engine(engine_uri, echo=True)
+        self.engine = create_engine(engine_uri, echo=echo)
         self.Session = sessionmaker(bind=self.engine)
 
         return None
@@ -41,6 +42,7 @@ class PUBGDatabaseConnector:
 
         try:
             for player in players:
+                logging.debug("upsert_players: upserting {0]".format(player['attributes']['name']))
                 insert_stmt = insert(Player).values(
                     player_id=player['id'],
                     player_name=player['attributes']['name'],
@@ -56,7 +58,7 @@ class PUBGDatabaseConnector:
 
                 conn.execute(merge_stmt)
             trans.commit()
-        except:
+        except Exception as e:
             trans.rollback()
 
         conn.close()

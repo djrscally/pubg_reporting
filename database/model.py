@@ -24,7 +24,7 @@ class PlayerMatches(Base):
     player = relationship("Player", back_populates='matches')
 
     match_id = Column(String(256), ForeignKey('matches.match_id'), primary_key=True)
-    match = relationship("Match", back_populates="player")
+    match = relationship("Match", back_populates="players")
 
     def __repr__(self):
         return "<PlayerMatches(player_id={0}, match_id={1})>".format(self.player_id, self.match_id)
@@ -37,7 +37,7 @@ class SeasonMatches(Base):
     __tablename__ = 'season_matches'
 
     season_id = Column(String(256), ForeignKey('seasons.season_id'), primary_key=True)
-    seasons = relationship('Season', back_populates='matches')
+    season = relationship('Season', back_populates='matches')
 
     match_id = Column(String(256), ForeignKey('matches.match_id'), primary_key=True)
     match = relationship('Match', back_populates='season')
@@ -57,9 +57,8 @@ class Player(Base):
     shard_id = Column(String(256), nullable=False)
 
     matches = relationship(
-        'Match',
-        secondary=PlayerMatches,
-    back_populates='player'
+        'PlayerMatches',
+        back_populates='player'
     )
 
     seasons= relationship(
@@ -98,8 +97,7 @@ class Season(Base):
     )
 
     matches = relationship(
-        'Match',
-        secondary=SeasonMatches,
+        'SeasonMatches',
         back_populates='season'
     )
 
@@ -123,15 +121,13 @@ class Match(Base):
     seasonState = Column(String(256), nullable=False)
     shardId = Column(String(256), nullable=False)
 
-    player = relationship(
-        'Player',
-        secondary=PlayerMatches,
-        back_populates='matches'
+    players = relationship(
+        'PlayerMatches',
+        back_populates='match'
     )
 
     season = relationship(
-        'Season',
-        secondary=SeasonMatches,
+        'SeasonMatches',
         back_populates='match'
     )
 
