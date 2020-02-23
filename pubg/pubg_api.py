@@ -149,7 +149,7 @@ class pubg_api:
         )
 
         while r.status_code == 429:
-            time.sleep(20)
+            time.sleep(10)
 
             r = requests.get(
                 self.base_url + shard + module,
@@ -160,7 +160,8 @@ class pubg_api:
             r.json()['data']
         )
 
-        time.sleep(5)
+        # endpoint has a limit of 10 requests per minute
+        time.sleep(6)
 
         return None
 
@@ -179,7 +180,7 @@ class pubg_api:
             )
 
             while r.status_code == 429:
-                time.sleep(20)
+                time.sleep(10)
 
                 r = requests.get(
                     self.base_url + shard + module,
@@ -189,5 +190,7 @@ class pubg_api:
             self.player_lifetime_stats.append(
                 r.json()['data']
             )
+        # endpoint has a limit of 10 requests per minute
+        time.sleep(6)
 
         return None
