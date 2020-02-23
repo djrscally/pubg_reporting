@@ -190,7 +190,7 @@ class pubg_api:
             self.player_lifetime_stats.append(
                 r.json()['data']
             )
-        # endpoint has a limit of 10 requests per minute
-        time.sleep(6)
+            # endpoint has a limit of 10 requests per minute
+            time.sleep(6)
 
         return None
