@@ -24,7 +24,7 @@ import logging
 def sync(loglevel, echo):
 
     numeric_level = getattr(logging, loglevel.upper(), None)
-    logging.basicConfig(filename='/home/djrscally/Coding/pubg_reporting/sync.log', filemode='w', level=numeric_level)
+    logging.basicConfig(filename='sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')
 
     user = os.environ.get('PUBGDB_USERNAME')
     password = os.environ.get('PUBGDB_PASSWORD')
