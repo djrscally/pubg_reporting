@@ -25,6 +25,9 @@ def sync(loglevel, echo):
 
     numeric_level = getattr(logging, loglevel.upper(), None)
     logging.basicConfig(filename='sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')
+    # Turn SQL Alchemy logging to the entered value
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.getLevelName(loglevel))
+    
 
     user = os.environ.get('PUBGDB_USERNAME')
     password = os.environ.get('PUBGDB_PASSWORD')
