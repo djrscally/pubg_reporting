@@ -9,6 +9,9 @@ import os
 import multiprocessing
 import logging
 
+# Need a global list for multiprocessing to work properly.
+matches = []
+
 class pubg_api:
 
     def __init__(self, config):
@@ -63,6 +66,7 @@ class pubg_api:
 
     def get_matches(self):
 
+        global matches
         processed_matches = []
 
         for player in self.players:
@@ -75,6 +79,9 @@ class pubg_api:
         with multiprocessing.Pool() as pool:
             pool.map(self.get_match, processed_matches)
 
+        logging.info("get_matches: Num Matches fetched = {0}".format(len(matches)))
+        self.matches = matches
+
         return True
 
     def get_match(self, match_id):
@@ -82,6 +89,9 @@ class pubg_api:
         Fetch a single match by calling the PUBG API, and append it to the list
         of matches
         """
+
+        global matches
+
         logging.debug("get_match: match_id={0}".format(match_id))
 
         shard = 'xbox-eu'
@@ -95,7 +105,7 @@ class pubg_api:
         except Exception as e:
             logging.error("get_match: API Request: {0}".format(e.Message))
 
-        self.matches.append(r.json())
+        matches.append(r.json())
 
         return True
 
@@ -155,6 +165,8 @@ class pubg_api:
                 self.base_url + shard + module,
                 headers=self.headers
             )
+
+        logging.debug("get_player_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json()['data']['attributes']['gameModeStats'], indent=4)))
 
         self.player_season_stats.append(
             r.json()['data']
