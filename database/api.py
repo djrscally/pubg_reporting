@@ -42,7 +42,7 @@ class PUBGDatabaseConnector:
 
         try:
             for player in players:
-                logging.debug("upsert_players: upserting {0]".format(player['attributes']['name']))
+                logging.debug("upsert_players: upserting {0}".format(player['attributes']['name']))
                 insert_stmt = insert(Player).values(
                     player_id=player['id'],
                     player_name=player['attributes']['name'],
