@@ -16,12 +16,18 @@ import logging
     default='WARNING',
     help='Level of detail to include in logs')
 @click.option(
-    '--echo/--no-echo',
+    '--echo',
     'echo',
-    default=False,
+    is_flag=True,
     help='Echo SQL Alchemy output to stdout'
 )
-def sync(loglevel, echo):
+@click.option(
+    '--build-only',
+    'buildonly',
+    is_flag=True,
+    help='Set flag to only build the database structure but not perform a sync'
+)
+def sync(loglevel, echo, buildonly):
 
     numeric_level = getattr(logging, loglevel.upper(), None)
     logging.basicConfig(filename='sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')
@@ -43,7 +49,8 @@ def sync(loglevel, echo):
     config = json.load(open(os.environ.get('PUBGDB_CONFIG_PATH') + 'config.json'))
     api = pubg_api(config)
 
-    __sync(api, pubgdb)
+    if not buildonly:
+        __sync(api, pubgdb)
 
 def __sync(api, pubgdb):
     logging.info("Beginning sync run")

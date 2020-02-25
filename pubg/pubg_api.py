@@ -22,6 +22,7 @@ class pubg_api:
 
         self.base_url = 'https://api.pubg.com/shards/'
 
+        self.shard = config['shard']
         self.player_names = config['players']
         self.matches = []
         self.player_season_stats = []
@@ -33,7 +34,6 @@ class pubg_api:
 
     def get_players(self):
 
-        shard = 'xbox-eu'
         module = '/players'
 
         i = 0
@@ -47,7 +47,7 @@ class pubg_api:
 
             try:
                 r = requests.get(
-                    self.base_url + shard + module,
+                    self.base_url + self.shard + module,
                     headers=self.headers,
                     params=payload
                     )
@@ -94,12 +94,11 @@ class pubg_api:
 
         logging.debug("get_match: match_id={0}".format(match_id))
 
-        shard = 'xbox-eu'
         module = '/matches/{0}'.format(match_id)
 
         try:
             r = requests.get(
-                self.base_url + shard + module,
+                self.base_url + self.shard + module,
                 headers=self.headers
             )
         except Exception as e:
@@ -117,11 +116,10 @@ class pubg_api:
         the time-last-called is more than 1 month ago.
         """
 
-        shard = 'xbox-eu'
         module = '/seasons'
 
         r = requests.get(
-            self.base_url + shard + module,
+            self.base_url + self.shard + module,
             headers=self.headers
         )
         self.seasons = r.json()['data']
@@ -145,16 +143,13 @@ class pubg_api:
         combo is a (player_id, season_id) tuple
         """
 
-        
-        shard = 'xbox-eu'
-
         module ='/players/{0}/seasons/{1}'.format(
             combo[0],
             combo[1]
         )
 
         r = requests.get(
-            self.base_url + shard + module,
+            self.base_url + self.shard + module,
             headers=self.headers
         )
 
@@ -162,7 +157,7 @@ class pubg_api:
             time.sleep(10)
 
             r = requests.get(
-                self.base_url + shard + module,
+                self.base_url + self.shard + module,
                 headers=self.headers
             )
 
@@ -179,15 +174,13 @@ class pubg_api:
 
     def get_player_lifetime_stats(self):
 
-        shard = 'xbox-eu'
-
         for player in self.players:
             module = '/players/{0}/seasons/lifetime'.format(
                 player['id']
             )
 
             r = requests.get(
-                self.base_url + shard + module,
+                self.base_url + self.shard + module,
                 headers=self.headers
             )
 
@@ -195,7 +188,7 @@ class pubg_api:
                 time.sleep(10)
 
                 r = requests.get(
-                    self.base_url + shard + module,
+                    self.base_url + self.shard + module,
                     headers=self.headers
                 )
 
