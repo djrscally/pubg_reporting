@@ -22,7 +22,7 @@ Follow these mandatory pre-requisite steps:
     PUBGDB_DATABASE  - holding the name of the db you want to use on the MySQL server
     PUBGDB_USERNAME  - holding the username of the MySQL user to connect to the DB
     PUBGDB_PASSWORD  - holding the password for the above MySQL user
-    PUBGDB_CONFIG_PATH  - holding a path to the config.json (NOT including the file name, so for example C:\Users\dscally\Documents\dev\pubg_reporting\) defining which players you want to sync, in this format:
+    PUBGDB_CONFIG_PATH  - holding a path to the config.json (NOT including the file name, so for example C:\Users\dscally\Documents\dev\pubg_reporting\) defining which players you want to sync plus your gaming shard, in this format:
 
 ```
 {
@@ -31,7 +31,8 @@ Follow these mandatory pre-requisite steps:
     "Player1",
     "Player2",
     ...,
-  ]
+  ],
+  "shard":"xbox-eu"
 }
 ```
 
