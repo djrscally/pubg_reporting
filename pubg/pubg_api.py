@@ -66,21 +66,20 @@ class pubg_api:
 
     def get_matches(self):
 
-        global matches
-        processed_matches = []
+        process_matches = []
 
         for player in self.players:
             for match in player['relationships']['matches']['data']:
-                if match['id'] in processed_matches:
+                if match['id'] in process_matches:
                     continue
                 else:
-                    processed_matches.append(match['id'])
+                    process_matches.append(match['id'])
         
         with multiprocessing.Pool() as pool:
-            pool.map(self.get_match, processed_matches)
+            multiprocessed_matches = pool.map(self.get_match, process_matches)
 
-        logging.info("get_matches: Num Matches fetched = {0}".format(len(matches)))
-        self.matches = matches
+        self.matches = [i for j in multiprocessed_matches for i in j]
+        logging.info("get_matches: Num Matches fetched = {0}".format(len(self.matches)))
 
         return True
 
@@ -90,7 +89,7 @@ class pubg_api:
         of matches
         """
 
-        global matches
+        matches = []
 
         logging.debug("get_match: match_id={0}".format(match_id))
 
@@ -106,7 +105,7 @@ class pubg_api:
 
         matches.append(r.json())
 
-        return True
+        return matches
 
     def get_seasons(self):
         """

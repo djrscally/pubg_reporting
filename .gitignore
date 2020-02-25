@@ -8,9 +8,6 @@ majorclagnut.py
 **.pyc
 **__pycache__**
 .vscode/
-<<<<<<< HEAD
 *.profile
-=======
-sync.profile
-sync.log
->>>>>>> logging
+*.log
+*.code-workspace
