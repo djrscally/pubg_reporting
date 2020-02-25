@@ -60,34 +60,35 @@ touch ~/.secrets/pubg
 chmod 700 ~/.secrets
 ```
 
-This creates a directory called .secrets in your home folder to which only you have access, and additionally creates a file called pubg - use whatever text editor you prefer to fill that file with the 
- Run `crontab -e` and simply create an entry to periodically run the sync, for example:
+This creates a directory called .secrets in your home folder to which only you have access, and additionally creates a file called pubg - use whatever text editor you prefer to fill that file with the commands needed to fill the environment variables, for example
 
-`0 0,8,16 /home/user/pubg_reporting/sync.sh`
+```
+export PUBGDB_HOST="localhost"
+export PUBGDB_DATABASE="pubg"
+export PUBGDB_USERNAME="pubg"
+export PUBGDB_PASSWORD="pubg"
+export PUBG_API_KEY="<< API Key Goes Here >>"
+export PUBGDB_CONFIG_PATH="/path/to/config/file/"
+```
 
-Would run the sync 3 times per day, at midnight, 8 am and 4pm.
+You can then "source" that file before running `python sync.py` and it'll work fine. Run `crontab -e` and simply create an entry to periodically run the sync, for example:
 
+`0 0,8,16 . /home/user/.secrets/pubg && /home/user/pubg_reporting/venv/bin/python3 /home/user/pubg_reporting/sync.py OPTIONS`
 
-
-
+Would run the sync 3 times per day, at midnight, 8 am and 4pm. Replace `OPTIONS` with anything you want to set, like `--log-level DEBUG` to get verbose output to sync.log.
 
 
 #### For Windows
 
-**Please Note:** I have not tested this at all. It ought to work fine, but no promises.
-At **some point** I'll get round to making a PowerShell script to replicate install.sh, but for now...
+Everything will work fine, but you don't have CRON obviously. Use Task Scheduler instead, and for setting the envvars have Task Scheduler run a .ps1 file in this form:
 
-1. Follow the same mandatory pre-requisite steps as for Linux, but skip \#3.
-2. If you can `git clone https://github.com/djrscally/pubg_reporting` in PowerShell then do that. If not, just go to that repo in a browser and hit the green "Clone or Download" button
-and download a .zip - unzip that somewhere appropriate and move into it
-3. Create a file called config.json Use whatever text editor you prefer to populate the config file in the following format:
+```
+$env:PUBGDB_HOST="localhost"
+$env:PUBGDB_DATABASE="pubg"
+$env:PUBGDB_USERNAME="pubg"
+$env:PUBGDB_PASSWORD="pubg"
+$env:PUBG_API_KEY="<< API Key Goes Here >>"
+$env:PUBGDB_CONFIG_PATH="/path/to/config/file/"
+```
 
-
-
-Because that file has the connection info saved to it, you'll want to change the permissions so that yours is the only user allowed to read it. Right click the file and go to Properties > Security, then click Advanced. _untick_ "Include inheritable permissions..." and then use the Change Permissions button to deny Read access to everyone but you (or some other users as appropriate, your call).
-
-4. Run databases/create_db.sql on your MySQL instance
-5. Open PowerShell in the pubg_reporting directory and run `py -3 ./sync.py`
-
-And that should work fine. Use Task Scheduler to run C:\\path\\to\\python\\py.exe with the argument C:\\path\\to\\repo\\pubg_reporting\\sync.py and the data should update on the schedule you specify
-
+Otherwise, should work identically.
