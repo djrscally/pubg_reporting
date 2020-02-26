@@ -64,17 +64,8 @@ class pubg_api:
         return True
 
 
-    def get_matches(self):
+    def get_matches(self, process_matches):
 
-        process_matches = []
-
-        for player in self.players:
-            for match in player['relationships']['matches']['data']:
-                if match['id'] in process_matches:
-                    continue
-                else:
-                    process_matches.append(match['id'])
-        
         with multiprocessing.Pool() as pool:
             multiprocessed_matches = pool.map(self.get_match, process_matches)
 

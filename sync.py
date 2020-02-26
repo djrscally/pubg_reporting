@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from database.model import Base, Player, PlayerSeasonStats
+from database.model import Base, Player, PlayerSeasonStats, Match
 from database.api import PUBGDatabaseConnector
 from pubg.pubg_api import pubg_api
 import json
@@ -66,7 +66,26 @@ def __sync(api, pubgdb):
     pubgdb.upsert_seasons(api.seasons)
 
     logging.info("Beginning get_matches() call")
-    api.get_matches()
+
+    # get_matches is slow because it syncs a lot. We're going to check the database
+    # to only make calls for matches that we don't already hold data for (since those)
+    # data will never change after the fact. Additionally, we need to make sure we 
+    # only sync each match a single time.
+
+    sess = pubgdb.Session()
+
+    process_matches = []
+
+    for player in api.players:
+        for match in player['relationships']['matches']['data']:
+            q = sess.query(Match).filter_by(match_id=match['id'])
+            # If we already added it, or it already exists in the database
+            if (match['id'] in process_matches) or (sess.query(q.exists()).one()[0]):
+                continue
+            else:
+                process_matches.append(match['id'])
+
+    api.get_matches(process_matches)
     logging.info("Beginning upsert_matches() call")
     pubgdb.upsert_matches(api.matches)
 
@@ -79,8 +98,6 @@ def __sync(api, pubgdb):
 
     # Player_season_stats is disgustingly slow, so we need to only make calls for
     # the current season and for expired seasons that don't already exist.
-
-    sess = pubgdb.Session()
 
     # Get the current season, and add in a player-season combo for all players for the
     # current season to the process list
