@@ -65,7 +65,7 @@ def __sync(api, pubgdb):
         last_sync_datetime = datetime.datetime.now()
         logging.debug("Last Sync Datetime not found in DB, setting to {0}".format(last_sync_datetime))
     else:
-        last_sync_datetime = datetime.datetime.strptime(q[0], '%Y-%m-%d %H:%M:%S')
+        last_sync_datetime = datetime.datetime.strptime(q.value, '%Y-%m-%d %H:%M:%S')
         logging.debug("Last Sync Datetime selected from DB as {0}".format(last_sync_datetime))
 
     logging.info("Beginning get_players() call")
@@ -107,12 +107,18 @@ def __sync(api, pubgdb):
 
     logging.info("Beginning get_player_season_stats() call")
 
-    # Player_season_stats is disgustingly slow, so we need to only make calls for
-    # the current season and for expired seasons that don't already exist.
+    # Player_season_stats and lifetime_stats are disgustingly slow due to rate limited endpoints,
+    # so we need to only make calls for the current season and for expired seasons that don't already exist as
+    # well as only for players who've played a match since the last sync.
 
-    # We only want to update player stats for players who've played since the last sync, so
-    # first build a table of when matches were played
+    # First, build a table of when matches were played
 
+    match_datetimes = [{match['data']['id']:datetime.datetime.strptime(match['data']['attributes']['createdAt'][:-2],'%Y-%m-%dT%H:%M:%S')} for match in api.matches]
+
+    # Next, build a list of players who've played since the last sync
+    # [season for season in self.seasons if season['attributes']['isCurrentSeason']]
+    
+    process_players = [p['id'] for p in api.players if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime]
     # Get the current season, and add in a player-season combo for all players for the
     # current season to the process list
     current_season_id = api.get_current_season()[0]['id']
