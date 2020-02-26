@@ -47,7 +47,7 @@ $ (venv) pip3 install -r requirements.txt
 $ (venv) python sync.py --build-only
 ```
 
-The script wil build the database for you. At this point all the infrastructure is set up; you can run `python sync.py` to pull in data for the players you defined in the config.json file. 
+The script will build the database for you. At this point all the infrastructure is set up; you can run `python sync.py` to pull in data for the players you defined in the config.json file. 
 
 Once the script completes, you should be good to go; you can hook in whichever analysis tool takes your fancy. I like [Metabase](https://www.metabase.com/).
 
@@ -74,7 +74,7 @@ export PUBGDB_CONFIG_PATH="/path/to/config/file/"
 
 You can then "source" that file before running `python sync.py` and it'll work fine. Run `crontab -e` and simply create an entry to periodically run the sync, for example:
 
-`0 0,8,16 . /home/user/.secrets/pubg && /home/user/pubg_reporting/venv/bin/python3 /home/user/pubg_reporting/sync.py OPTIONS`
+`0 0,8,16 0 0 0 . /home/user/.secrets/pubg && /home/user/pubg_reporting/venv/bin/python3 /home/user/pubg_reporting/sync.py OPTIONS`
 
 Would run the sync 3 times per day, at midnight, 8 am and 4pm. Replace `OPTIONS` with anything you want to set, like `--log-level DEBUG` to get verbose output to sync.log.
 
