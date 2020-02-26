@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine
-from database.model import Base, Player, PlayerSeasonStats, Match
+from database.model import Base, Player, PlayerSeasonStats, Match, SystemInformation
 from database.api import PUBGDatabaseConnector
 from pubg.pubg_api import pubg_api
 import json
+import datetime
 import pymysql
 import os
 import click
@@ -55,6 +56,18 @@ def sync(loglevel, echo, buildonly):
 def __sync(api, pubgdb):
     logging.info("Beginning sync run")
 
+    # Get the last sync datetime, for use later on. Check that this isn't the first sync
+    # and if it is, treat the current time as the last_sync time
+    sess = pubgdb.Session()
+    
+    q = sess.query(SystemInformation).filter_by(key="Last Sync Datetime").one_or_none()
+    if q is None:
+        last_sync_datetime = datetime.datetime.now()
+        logging.debug("Last Sync Datetime not found in DB, setting to {0}".format(last_sync_datetime))
+    else:
+        last_sync_datetime = datetime.datetime.strptime(q[0], '%Y-%m-%d %H:%M:%S')
+        logging.debug("Last Sync Datetime selected from DB as {0}".format(last_sync_datetime))
+
     logging.info("Beginning get_players() call")
     api.get_players()
     logging.info("Beginning upsert_players() call")
@@ -71,8 +84,6 @@ def __sync(api, pubgdb):
     # to only make calls for matches that we don't already hold data for (since those)
     # data will never change after the fact. Additionally, we need to make sure we 
     # only sync each match a single time.
-
-    sess = pubgdb.Session()
 
     process_matches = []
 
@@ -98,6 +109,9 @@ def __sync(api, pubgdb):
 
     # Player_season_stats is disgustingly slow, so we need to only make calls for
     # the current season and for expired seasons that don't already exist.
+
+    # We only want to update player stats for players who've played since the last sync, so
+    # first build a table of when matches were played
 
     # Get the current season, and add in a player-season combo for all players for the
     # current season to the process list
@@ -132,6 +146,17 @@ def __sync(api, pubgdb):
     api.get_player_lifetime_stats()
     logging.info("Beginning upsert_player_lifetime_stats() call")
     pubgdb.upsert_player_lifetime_stats(api.player_lifetime_stats)
+
+    # Update the last updated time in the db. Remember to check that it 
+    # exists first (to avoid writing upsert logic...)
+    q = sess.query(SystemInformation).filter_by(key='Last Sync Datetime').one_or_none()
+    if q is not None:
+        q.update({SystemInformation.value:datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
+    else:
+        lsdt = SystemInformation(key='Last Sync Datetime', value=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        sess.add(lsdt)
+
+    sess.commit()
 
     logging.info("Sync run complete")
 
