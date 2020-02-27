@@ -57,12 +57,12 @@ def __sync(api, pubgdb):
     logging.info("Beginning sync run")
 
     # Get the last sync datetime, for use later on. Check that this isn't the first sync
-    # and if it is, treat the current time as the last_sync time
+    # and if it is, set the last_sync_datetime to 1970-01-01 00:00:00
     sess = pubgdb.Session()
     
     q = sess.query(SystemInformation).filter_by(key="Last Sync Datetime").one_or_none()
     if q is None:
-        last_sync_datetime = datetime.datetime.now()
+        last_sync_datetime = datetime.datetime(1970, 1, 1)
         logging.debug("Last Sync Datetime not found in DB, setting to {0}".format(last_sync_datetime))
     else:
         last_sync_datetime = datetime.datetime.strptime(q.value, '%Y-%m-%d %H:%M:%S')
@@ -113,7 +113,7 @@ def __sync(api, pubgdb):
 
     # First, build a table of when matches were played
 
-    match_datetimes = [{match['data']['id']:datetime.datetime.strptime(match['data']['attributes']['createdAt'][:-2],'%Y-%m-%dT%H:%M:%S')} for match in api.matches]
+    match_datetimes = {m.match_id:m.createdAt for m in sess.query(Match).all()}
 
     # Next, build a list of players who've played since the last sync
     # [season for season in self.seasons if season['attributes']['isCurrentSeason']]
@@ -124,7 +124,7 @@ def __sync(api, pubgdb):
     current_season_id = api.get_current_season()[0]['id']
 
     process_me = []
-    process_me += [(p['id'], current_season_id) for p in api.players]
+    process_me += [(p, current_season_id) for p in process_players]
 
     # Build a list of player-seasons to check, meaning every possible combo where isCurrentSeason is false
     check_me = [(p['id'], s['id']) for p in api.players for s in [s for s in api.seasons if not s['attributes']['isCurrentSeason']]]
@@ -149,14 +149,15 @@ def __sync(api, pubgdb):
     pubgdb.upsert_season_matches(api.player_season_stats)
 
     logging.info("Beginning get_player_lifetime_stats() call")
-    api.get_player_lifetime_stats()
+    # We only call player lifetime stats for players already identified as having played a match since the last sync
+    api.get_player_lifetime_stats(process_players)
     logging.info("Beginning upsert_player_lifetime_stats() call")
     pubgdb.upsert_player_lifetime_stats(api.player_lifetime_stats)
 
     # Update the last updated time in the db. Remember to check that it 
     # exists first (to avoid writing upsert logic...)
-    q = sess.query(SystemInformation).filter_by(key='Last Sync Datetime').one_or_none()
-    if q is not None:
+    q = sess.query(SystemInformation).filter_by(key='Last Sync Datetime')
+    if q.one_or_none() is not None:
         q.update({SystemInformation.value:datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
     else:
         lsdt = SystemInformation(key='Last Sync Datetime', value=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
