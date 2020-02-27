@@ -29,6 +29,10 @@ import logging
     help='Set flag to only build the database structure but not perform a sync'
 )
 def sync(loglevel, echo, buildonly):
+    """
+    Program to sync data from the Player Unknown Battlegrounds API into a MySQL
+    database, for analysis and pretty nerd graphs.
+    """
 
     numeric_level = getattr(logging, loglevel.upper(), None)
     logging.basicConfig(filename='sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')

@@ -6,6 +6,23 @@
 
 Everything should be basically useable. Installation is relatively simple. I want to flesh this readme out with some documentation about the tables and available views, as well as create some more useful views to begin with, but go ahead and use it now if you want to get started.
 
+### Usage:
+
+```
+Usage: sync.py [OPTIONS]
+
+  Program to sync data from the Player Unknown Battlegrounds API into a
+  MySQL database, for analysis and pretty nerd graphs.
+
+Options:
+  --log-level [DEBUG|INFO|WARNING|ERROR|CRITICAL]
+                                  Level of detail to include in logs
+  --echo                          Echo SQL Alchemy output to stdout
+  --build-only                    Set flag to only build the database
+                                  structure but not perform a sync
+  --help                          Show this message and exit.
+```
+
 ### Installation:
 
 #### For Linux
