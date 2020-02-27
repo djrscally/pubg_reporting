@@ -13,6 +13,18 @@ from sqlalchemy.schema import PrimaryKeyConstraint
 
 Base = declarative_base()
 
+class SystemInformation(Base):
+    """
+    Key-Value table storing metadata about the sync process
+    """
+
+    __tablename__ = 'system_information'
+    key = Column(String(512), primary_key=True)
+    value = Column(String(512))
+
+    def __repr__(self):
+        return "<SystemInformation(key={0}, value={1})>".format(self.key, self.value)
+
 class PlayerMatches(Base):
     """
     Association table linking players to the matches they have played in

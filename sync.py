@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine
-from database.model import Base, Player, PlayerSeasonStats, Match
+from database.model import Base, Player, PlayerSeasonStats, Match, SystemInformation
 from database.api import PUBGDatabaseConnector
 from pubg.pubg_api import pubg_api
 import json
+import datetime
 import pymysql
 import os
 import click
@@ -55,6 +56,18 @@ def sync(loglevel, echo, buildonly):
 def __sync(api, pubgdb):
     logging.info("Beginning sync run")
 
+    # Get the last sync datetime, for use later on. Check that this isn't the first sync
+    # and if it is, set the last_sync_datetime to 1970-01-01 00:00:00
+    sess = pubgdb.Session()
+    
+    q = sess.query(SystemInformation).filter_by(key="Last Sync Datetime").one_or_none()
+    if q is None:
+        last_sync_datetime = datetime.datetime(1970, 1, 1)
+        logging.debug("Last Sync Datetime not found in DB, setting to {0}".format(last_sync_datetime))
+    else:
+        last_sync_datetime = datetime.datetime.strptime(q.value, '%Y-%m-%d %H:%M:%S')
+        logging.debug("Last Sync Datetime selected from DB as {0}".format(last_sync_datetime))
+
     logging.info("Beginning get_players() call")
     api.get_players()
     logging.info("Beginning upsert_players() call")
@@ -71,8 +84,6 @@ def __sync(api, pubgdb):
     # to only make calls for matches that we don't already hold data for (since those)
     # data will never change after the fact. Additionally, we need to make sure we 
     # only sync each match a single time.
-
-    sess = pubgdb.Session()
 
     process_matches = []
 
@@ -96,15 +107,24 @@ def __sync(api, pubgdb):
 
     logging.info("Beginning get_player_season_stats() call")
 
-    # Player_season_stats is disgustingly slow, so we need to only make calls for
-    # the current season and for expired seasons that don't already exist.
+    # Player_season_stats and lifetime_stats are disgustingly slow due to rate limited endpoints,
+    # so we need to only make calls for the current season and for expired seasons that don't already exist as
+    # well as only for players who've played a match since the last sync.
 
+    # First, build a table of when matches were played
+
+    match_datetimes = {m.match_id:m.createdAt for m in sess.query(Match).all()}
+
+    # Next, build a list of players who've played since the last sync
+    # [season for season in self.seasons if season['attributes']['isCurrentSeason']]
+    
+    process_players = [p['id'] for p in api.players if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime]
     # Get the current season, and add in a player-season combo for all players for the
     # current season to the process list
     current_season_id = api.get_current_season()[0]['id']
 
     process_me = []
-    process_me += [(p['id'], current_season_id) for p in api.players]
+    process_me += [(p, current_season_id) for p in process_players]
 
     # Build a list of player-seasons to check, meaning every possible combo where isCurrentSeason is false
     check_me = [(p['id'], s['id']) for p in api.players for s in [s for s in api.seasons if not s['attributes']['isCurrentSeason']]]
@@ -129,9 +149,21 @@ def __sync(api, pubgdb):
     pubgdb.upsert_season_matches(api.player_season_stats)
 
     logging.info("Beginning get_player_lifetime_stats() call")
-    api.get_player_lifetime_stats()
+    # We only call player lifetime stats for players already identified as having played a match since the last sync
+    api.get_player_lifetime_stats(process_players)
     logging.info("Beginning upsert_player_lifetime_stats() call")
     pubgdb.upsert_player_lifetime_stats(api.player_lifetime_stats)
+
+    # Update the last updated time in the db. Remember to check that it 
+    # exists first (to avoid writing upsert logic...)
+    q = sess.query(SystemInformation).filter_by(key='Last Sync Datetime')
+    if q.one_or_none() is not None:
+        q.update({SystemInformation.value:datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
+    else:
+        lsdt = SystemInformation(key='Last Sync Datetime', value=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        sess.add(lsdt)
+
+    sess.commit()
 
     logging.info("Sync run complete")
 

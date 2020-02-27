@@ -162,11 +162,11 @@ class pubg_api:
 
         return None
 
-    def get_player_lifetime_stats(self):
+    def get_player_lifetime_stats(self, process_players):
 
-        for player in self.players:
+        for player in process_players:
             module = '/players/{0}/seasons/lifetime'.format(
-                player['id']
+                player
             )
 
             r = requests.get(
