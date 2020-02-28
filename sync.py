@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from database.model import Base, Player, PlayerSeasonStats, Match, SystemInformation
+from database.model import *
 from database.api import PUBGDatabaseConnector
 from pubg.pubg_api import pubg_api
 import json
@@ -99,9 +99,9 @@ def __sync(api, pubgdb):
 
     for player in api.players:
         for match in player['relationships']['matches']['data']:
-            q = sess.query(Match).filter_by(match_id=match['id'])
+            q = sess.query(PlayerMatchStats).filter_by(player_id=player['id'], match_id=match['id'])
             # If we already added it, or it already exists in the database
-            if (match['id'] in process_matches) or (sess.query(q.exists()).one()[0]):
+            if (match['id'] in process_matches) or (q.one_or_none() is not None):
                 continue
             else:
                 process_matches.append(match['id'])
