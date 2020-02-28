@@ -9,5 +9,5 @@ majorclagnut.py
 **__pycache__**
 .vscode/
 *.profile
-*.log
+*.log**
 *.code-workspace

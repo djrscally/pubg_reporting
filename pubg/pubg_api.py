@@ -52,12 +52,12 @@ class pubg_api:
                     params=payload
                     )
             except Exception as e:
-                logging.error("get_players: API Request: {0}".format(e.Message))
+                logging.exception("get_players: API Request")
 
             try:
                 self.players = self.players + r.json()['data']
-            except:
-                logging.error("get_players: Append to players: {0}".format(e.message))
+            except Exception as e:
+                logging.exception("get_players: Append to players")
 
             i += 10
 
@@ -92,9 +92,12 @@ class pubg_api:
                 headers=self.headers
             )
         except Exception as e:
-            logging.error("get_match: API Request: {0}".format(e.Message))
+            logging.exception("get_match: API Request:")
 
-        matches.append(r.json())
+        try:
+            matches.append(r.json())
+        except:
+            logging.exception("get_match: Append to matches")
 
         return matches
 

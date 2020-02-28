@@ -38,7 +38,8 @@ def sync(loglevel, echo, buildonly):
     logging.basicConfig(filename='sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')
     # Turn SQL Alchemy logging to the entered value
     logging.getLogger('sqlalchemy.engine').setLevel(logging.getLevelName(loglevel))
-    
+    logging.getLogger('sqlalchemy.dialects').setLevel(logging.getLevelName(loglevel))
+    logging.getLogger('sqlalchemy.pool').setLevel(logging.getLevelName(loglevel))
 
     user = os.environ.get('PUBGDB_USERNAME')
     password = os.environ.get('PUBGDB_PASSWORD')
@@ -65,6 +66,9 @@ def __sync(api, pubgdb):
     sess = pubgdb.Session()
     
     q = sess.query(SystemInformation).filter_by(key="Last Sync Datetime").one_or_none()
+
+    sess.close()
+
     if q is None:
         last_sync_datetime = datetime.datetime(1970, 1, 1)
         logging.debug("Last Sync Datetime not found in DB, setting to {0}".format(last_sync_datetime))
@@ -89,6 +93,8 @@ def __sync(api, pubgdb):
     # data will never change after the fact. Additionally, we need to make sure we 
     # only sync each match a single time.
 
+    sess = pubgdb.Session()
+
     process_matches = []
 
     for player in api.players:
@@ -99,6 +105,8 @@ def __sync(api, pubgdb):
                 continue
             else:
                 process_matches.append(match['id'])
+
+    sess.close()
 
     api.get_matches(process_matches)
     logging.info("Beginning upsert_matches() call")
@@ -117,12 +125,23 @@ def __sync(api, pubgdb):
 
     # First, build a table of when matches were played
 
+    sess = pubgdb.Session()
+
     match_datetimes = {m.match_id:m.createdAt for m in sess.query(Match).all()}
+
+    sess.close()
 
     # Next, build a list of players who've played since the last sync
     # [season for season in self.seasons if season['attributes']['isCurrentSeason']]
+
+    process_players = []
+
+    for p in api.players:
+        if len(p['relationships']['matches']['data']) > 0:
+            if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime:
+                process_players.append(p['id'])
     
-    process_players = [p['id'] for p in api.players if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime]
+#    process_players = [p['id'] for p in api.players if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime]
     # Get the current season, and add in a player-season combo for all players for the
     # current season to the process list
     current_season_id = api.get_current_season()[0]['id']
@@ -134,6 +153,9 @@ def __sync(api, pubgdb):
     check_me = [(p['id'], s['id']) for p in api.players for s in [s for s in api.seasons if not s['attributes']['isCurrentSeason']]]
     
     # For each of those possibilities, check if data exist already
+
+    sess = pubgdb.Session()
+
     for combo in check_me:
         q = sess.query(PlayerSeasonStats).filter_by(player_id=combo[0], season_id=combo[1])
         # If so, skip it
@@ -142,6 +164,8 @@ def __sync(api, pubgdb):
         # Otherwise, add to the list of things to process
         else:
             process_me.append(combo)
+
+    sess.close()
 
     # Do the actual processing
     for combo in process_me:
@@ -160,6 +184,9 @@ def __sync(api, pubgdb):
 
     # Update the last updated time in the db. Remember to check that it 
     # exists first (to avoid writing upsert logic...)
+
+    sess = pubgdb.Session()
+
     q = sess.query(SystemInformation).filter_by(key='Last Sync Datetime')
     if q.one_or_none() is not None:
         q.update({SystemInformation.value:datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
@@ -168,6 +195,7 @@ def __sync(api, pubgdb):
         sess.add(lsdt)
 
     sess.commit()
+    sess.close()
 
     logging.info("Sync run complete")
 
