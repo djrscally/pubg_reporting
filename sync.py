@@ -8,6 +8,7 @@ import pymysql
 import os
 import click
 import logging
+from config.config import cli
 
 @click.command()
 @click.option(
@@ -28,7 +29,14 @@ import logging
     is_flag=True,
     help='Set flag to only build the database structure but not perform a sync'
 )
-def sync(loglevel, echo, buildonly):
+@click.option(
+    '--config',
+    'config',
+    is_flag=True,
+    default=False,
+    help='Set the config flag to enter the administration cli. The sync will NOT be ran.'
+)
+def sync(loglevel, echo, buildonly, config):
     """
     Program to sync data from the Player Unknown Battlegrounds API into a MySQL
     database, for analysis and pretty nerd graphs.
@@ -55,7 +63,9 @@ def sync(loglevel, echo, buildonly):
     config = json.load(open(os.environ.get('PUBGDB_CONFIG_PATH') + 'config.json'))
     api = pubg_api(config)
 
-    if not buildonly:
+    if config:
+        cli(pubgdb)
+    if (not buildonly) and (not config):
         __sync(api, pubgdb)
 
 def __sync(api, pubgdb):

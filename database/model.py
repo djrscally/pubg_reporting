@@ -25,6 +25,20 @@ class SystemInformation(Base):
     def __repr__(self):
         return "<SystemInformation(key={0}, value={1})>".format(self.key, self.value)
 
+class SyncPlayers(Base):
+    """
+    Manually administered table that defines which player-shards to sync.
+    Users enter player IGNs and shards here and the script syncs their data
+    """
+
+    __tablename__ = 'sync_players'
+
+    player_ign = Column(String(256), primary_key=True)
+    shard = Column(String(32), primary_key=True)
+
+    def __repr__(self):
+        return "<SyncPlayers(player_ign={0}, shard={1})>".format(player_ign, shard)
+
 class PlayerMatches(Base):
     """
     Association table linking players to the matches they have played in
