@@ -78,6 +78,20 @@ def __sync(api, pubgdb):
 
     logging.info("Beginning get_players() call")
     api.get_players()
+
+    # We want to record the IDs of NEW players (I.E. those not yet present in the database) for 
+    # use later on.
+
+    sess = pubgdb.Session()
+
+    new_players = []
+
+    for p in api.players:
+        if sess.query(Player).filter_by(player_id=p['id']).one_or_none() is None:
+            new_players.append(p['id'])
+
+    sess.close()
+
     logging.info("Beginning upsert_players() call")
     pubgdb.upsert_players(api.players)
 
@@ -131,17 +145,18 @@ def __sync(api, pubgdb):
 
     sess.close()
 
-    # Next, build a list of players who've played since the last sync
-    # [season for season in self.seasons if season['attributes']['isCurrentSeason']]
+    # Next, build a list of players who've played since the last sync or are new
 
-    process_players = []
+    process_players = [] + new_players
 
     for p in api.players:
         if len(p['relationships']['matches']['data']) > 0:
             if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime:
                 process_players.append(p['id'])
     
-#    process_players = [p['id'] for p in api.players if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime]
+    # dedupedeloopwoop
+    process_players = list(set(process_players))
+
     # Get the current season, and add in a player-season combo for all players for the
     # current season to the process list
     current_season_id = api.get_current_season()[0]['id']
