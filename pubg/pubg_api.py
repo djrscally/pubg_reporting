@@ -29,8 +29,51 @@ class pubg_api:
         self.player_lifetime_stats = []
         self.players = []
 
+        # holders for response variables, for rate-limit avoidance purposes
+        self.response_status_code = None
+        self.response_headers = None
+
         return None
 
+    def invoke_rest_api(self, url, headers, params=None):
+        """
+        All the calls to the API are done through this function, so that any necessary changes can easily
+        be made in one place
+        """
+
+        # rate limiting goes here. Check the latest response header dict and
+        # see if it has the rate limit headers. If it does and we're out of 
+        # calls, wait till the reset. Otherwise, just run the func.
+
+        # if we've actually run something already
+        if self.response_status_code is not None:
+            # and it has a rate limit
+            if 'X-Ratelimit-Remaining' in self.response_headers.keys():
+                # if the rate limit is 0
+                if self.response_headers['X-Ratelimit-Remaining'] == '0':
+                    # rather than a bare sleep we'll while away the time till current > reset time, so that in the case
+                    # we end up waiting past the reset time of the last call due to db writes or whatever we're not unecessarily 
+                    # hanging around.
+                    reset_time = float(self.response_headers['X-Ratelimit-Reset'])
+
+                    # log here since this is the first place we're _actually_ waiting
+                    logging.debug('Waiting {0}s to avoid rate limiter'.format((reset_time-time.time()) + 5.))
+
+                    while time.time() < (reset_time + 5):
+                        continue
+
+        # our waiting is done, on with the call, yo!
+        r = requests.get(
+            url=url,
+            headers=headers,
+            params=params
+        )
+
+        # store the latest response code and headers
+        self.response_status_code = r.status_code
+        self.response_headers = r.headers
+
+        return r
 
     def get_players(self):
 
@@ -46,8 +89,8 @@ class pubg_api:
             logging.debug("get_players:Payload = [{0}]".format(','.join(self.player_names[i:i+10])))
 
             try:
-                r = requests.get(
-                    self.base_url + self.shard + module,
+                r = self.invoke_rest_api(
+                    url=self.base_url + self.shard + module,
                     headers=self.headers,
                     params=payload
                     )
@@ -87,8 +130,8 @@ class pubg_api:
         module = '/matches/{0}'.format(match_id)
 
         try:
-            r = requests.get(
-                self.base_url + self.shard + module,
+            r = self.invoke_rest_api(
+                url=self.base_url + self.shard + module,
                 headers=self.headers
             )
         except Exception as e:
@@ -111,8 +154,8 @@ class pubg_api:
 
         module = '/seasons'
 
-        r = requests.get(
-            self.base_url + self.shard + module,
+        r = self.invoke_rest_api(
+            url=self.base_url + self.shard + module,
             headers=self.headers
         )
         self.seasons = r.json()['data']
@@ -141,16 +184,16 @@ class pubg_api:
             combo[1]
         )
 
-        r = requests.get(
-            self.base_url + self.shard + module,
+        r = self.invoke_rest_api(
+            url=self.base_url + self.shard + module,
             headers=self.headers
         )
 
         while r.status_code == 429:
             time.sleep(10)
 
-            r = requests.get(
-                self.base_url + self.shard + module,
+            r = self.invoke_rest_api(
+                url=self.base_url + self.shard + module,
                 headers=self.headers
             )
 
@@ -172,16 +215,16 @@ class pubg_api:
                 player
             )
 
-            r = requests.get(
-                self.base_url + self.shard + module,
+            r = self.invoke_rest_api(
+                url=self.base_url + self.shard + module,
                 headers=self.headers
             )
 
             while r.status_code == 429:
                 time.sleep(10)
 
-                r = requests.get(
-                    self.base_url + self.shard + module,
+                r = self.invoke_rest_api(
+                    url=self.base_url + self.shard + module,
                     headers=self.headers
                 )
 

@@ -35,7 +35,7 @@ def sync(loglevel, echo, buildonly):
     """
 
     numeric_level = getattr(logging, loglevel.upper(), None)
-    logging.basicConfig(filename='sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')
+    logging.basicConfig(filename=os.environ.get('PUBGDB_CONFIG_PATH') + 'sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')
     # Turn SQL Alchemy logging to the entered value
     logging.getLogger('sqlalchemy.engine').setLevel(logging.getLevelName(loglevel))
     logging.getLogger('sqlalchemy.dialects').setLevel(logging.getLevelName(loglevel))
@@ -103,8 +103,8 @@ def __sync(api, pubgdb):
     logging.info("Beginning get_matches() call")
 
     # get_matches is slow because it syncs a lot. We're going to check the database
-    # to only make calls for matches that we don't already hold data for (since those)
-    # data will never change after the fact. Additionally, we need to make sure we 
+    # to only make calls for matches that we don't already hold data for (since those
+    # data will never change after the fact). Additionally, we need to make sure we 
     # only sync each match a single time.
 
     sess = pubgdb.Session()
