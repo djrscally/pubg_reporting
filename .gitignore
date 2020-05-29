@@ -1,5 +1,5 @@
 *egg-info/
-.envars
+.envars*
 .vscode
 **pycache**
 **.pyc
