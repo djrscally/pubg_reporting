@@ -46,7 +46,7 @@ def sync(loglevel, echo, buildonly):
     host = os.environ.get('PUBGDB_HOST')
     database = os.environ.get('PUBGDB_DATABASE')
 
-    db_uri = 'mysql+pymysql://{0}:{1}@{2}/{3}'.format(user, password, host, database)
+    db_uri = 'mysql://{0}:{1}@{2}/{3}'.format(user, password, host, database)
         #db_uri = 'sqlite:///:memory:'
 
     pubgdb = PUBGDatabaseConnector(db_uri, echo)
