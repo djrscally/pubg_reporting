@@ -22,13 +22,7 @@ import logging
     is_flag=True,
     help='Echo SQL Alchemy output to stdout'
 )
-@click.option(
-    '--build-only',
-    'buildonly',
-    is_flag=True,
-    help='Set flag to only build the database structure but not perform a sync'
-)
-def sync(loglevel, echo, buildonly):
+def sync(loglevel, echo):
     """
     Program to sync data from the Player Unknown Battlegrounds API into a MySQL
     database, for analysis and pretty nerd graphs.
@@ -50,13 +44,11 @@ def sync(loglevel, echo, buildonly):
         #db_uri = 'sqlite:///:memory:'
 
     pubgdb = PUBGDatabaseConnector(db_uri, echo)
-    Base.metadata.create_all(pubgdb.engine)
 
     config = json.load(open(os.environ.get('PUBGDB_CONFIG_PATH') + 'config.json'))
     api = pubg_api(config)
 
-    if not buildonly:
-        __sync(api, pubgdb)
+    __sync(api, pubgdb)
 
 def __sync(api, pubgdb):
     logging.info("Beginning sync run")

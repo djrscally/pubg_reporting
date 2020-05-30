@@ -128,6 +128,7 @@ class Match(Base):
     createdAt = Column(DateTime, nullable=False)
     duration = Column(Integer, nullable=False)
     gameMode = Column(String(256), nullable=False)
+    matchType = Column(String(256), nullable=True)
     mapName = Column(String(256), nullable=False)
     isCustomMatch = Column(Boolean, nullable=False)
     seasonState = Column(String(256), nullable=False)
