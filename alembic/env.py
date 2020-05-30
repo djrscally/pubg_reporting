@@ -36,7 +36,7 @@ import os
 user = os.environ.get('PUBGDB_USERNAME')
 password = os.environ.get('PUBGDB_PASSWORD')
 host = os.environ.get('PUBGDB_HOST')
-database = 'dummy' #os.environ.get('PUBGDB_DATABASE')
+database = os.environ.get('PUBGDB_DATABASE')
 
 db_uri = 'mysql+pymysql://{0}:{1}@{2}/{3}'.format(user, password, host, database)
 
