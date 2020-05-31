@@ -73,8 +73,13 @@ class Player(Base):
         back_populates='player'
     )
 
-    seasons= relationship(
+    seasons = relationship(
         'PlayerSeasonStats',
+        back_populates='player'
+    )
+
+    ranked_seasons = relationship(
+        'PlayerRankedSeasonStats',
         back_populates='player'
     )
 
@@ -108,6 +113,11 @@ class Season(Base):
         back_populates='season'
     )
 
+    ranked_players = relationship(
+        'PlayerRankedSeasonStats',
+        back_populates='season'
+    )
+
     matches = relationship(
         'SeasonMatches',
         back_populates='season'
@@ -128,6 +138,7 @@ class Match(Base):
     createdAt = Column(DateTime, nullable=False)
     duration = Column(Integer, nullable=False)
     gameMode = Column(String(256), nullable=False)
+    matchType = Column(String(256), nullable=True)
     mapName = Column(String(256), nullable=False)
     isCustomMatch = Column(Boolean, nullable=False)
     seasonState = Column(String(256), nullable=False)
@@ -188,8 +199,6 @@ class PlayerMatchStats(Base):
             self.match_id
         )
 
-
-
 class PlayerSeasonStats(Base):
     """
     Stats for a single season, per player and game mode. I.E. there's a row for
@@ -205,9 +214,8 @@ class PlayerSeasonStats(Base):
     player_id = Column(String(256), ForeignKey('players.player_id'))
     player = relationship('Player', back_populates='seasons')
 
-    game_mode = Column(String(256))
-
     game_mode = Column(String(256), nullable=False)
+
     assists = Column(Integer, nullable=False)
     boosts = Column(Integer, nullable=False)
     dBNOs = Column(Integer, nullable=False)
@@ -245,6 +253,71 @@ class PlayerSeasonStats(Base):
 
     def __repr__(self):
         return "<PlayerSeasonStats(season_id={0}, player_id={1}, game_mode={2})>".format(
+            self.season_id,
+            self.player_id,
+            self.game_mode
+        )
+
+    # have to move the PK definition to table args or SQL Alchemy only seems
+    # to keep the first two.
+    __table_args__ = (
+        PrimaryKeyConstraint('player_id', 'season_id', 'game_mode'),
+        {},
+    )
+
+class PlayerRankedSeasonStats(Base):
+    """
+    Ranked stats for a single season, per player and game mode. I.E. there's a row for
+    each player, for each season they have played in, for each game-mode that
+    exists in PUBG
+    """
+
+    __tablename__ = 'player_ranked_season_stats'
+
+    season_id = Column(String(256), ForeignKey('seasons.season_id'))
+    season = relationship('Season', back_populates='ranked_players')
+
+    player_id = Column(String(256), ForeignKey('players.player_id'))
+    player = relationship('Player', back_populates='ranked_seasons')
+
+    game_mode = Column(String(256), nullable=False)
+
+    # ranked bits
+    currentRankPoint = Column(Integer, nullable=False)
+    bestRankPoint = Column(Integer, nullable=False)
+    currentTier_Tier = Column(String(256), nullable=False)
+    currentTier_subTier = Column(String(256), nullable=False)
+    bestTier_Tier = Column(String(256), nullable=False)
+    bestTier_subTier = Column(String(256), nullable=False)
+
+    roundsPlayed = Column(Integer, nullable=False)
+    avgRank = Column(Float, nullable=False)
+    avgSurvivalTime = Column(Integer, nullable=False)
+    top10Ratio = Column(Float, nullable=False)
+    winRatio = Column(Float, nullable=False)
+    assists = Column(Integer, nullable=False)
+    wins = Column(Integer, nullable=False)
+    kda = Column(Float, nullable=False)
+    kdr = Column(Float, nullable=False)
+    kills = Column(Integer, nullable=False)
+    deaths = Column(Integer, nullable=False)
+    roundMostKills = Column(Integer, nullable=False)
+    longestKill = Column(Float, nullable=False)
+    headshotKills = Column(Integer, nullable=False)
+    headshotKillRatio = Column(Float, nullable=False)
+    damageDealt = Column(Float, nullable=False)
+    dBNOs = Column(Integer, nullable=False)
+    reviveRatio = Column(Float, nullable=False)
+    revives = Column(Integer, nullable=False)
+    heals = Column(Integer, nullable=False)
+    boosts = Column(Integer, nullable=False)
+    weaponsAcquired = Column(Integer, nullable=False)
+    teamKills = Column(Integer, nullable=False)
+    playTime = Column(Integer, nullable=False)
+    killStreak = Column(Integer, nullable=False)
+
+    def __repr__(self):
+        return "<PlayerRankedSeasonStats(season_id={0}, player_id={1}, game_mode={2})>".format(
             self.season_id,
             self.player_id,
             self.game_mode

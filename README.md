@@ -18,8 +18,6 @@ Options:
   --log-level [DEBUG|INFO|WARNING|ERROR|CRITICAL]
                                   Level of detail to include in logs
   --echo                          Echo SQL Alchemy output to stdout
-  --build-only                    Set flag to only build the database
-                                  structure but not perform a sync
   --help                          Show this message and exit.
 ```
 
@@ -61,12 +59,26 @@ $ cd pubg_reporting
 $ python3 -m venv venv
 $ source ./venv/bin/activate
 $ (venv) pip3 install -r requirements.txt
-$ (venv) python sync.py --build-only
+$ (venv) alembic upgrade head
 ```
 
 The script will build the database for you. At this point all the infrastructure is set up; you can run `python sync.py` to pull in data for the players you defined in the config.json file. 
 
 Once the script completes, you should be good to go; you can hook in whichever analysis tool takes your fancy. I like [Metabase](https://www.metabase.com/).
+
+#### Upgrading to newer versions of the code
+
+I recommend you stick to master branch, or some weird and wonderful things are likely to happen. If you pull from master to get new code, make sure you run alembic's upgrade function in case some changes were made to the underlying database; that will handle the changes to the db for you. You should definitely take a backup first though, just in case:
+
+```
+$ mysqldump --databases your-database-name | gzip /path/to/backup/folder/your-database-name.sql.gz
+$ git pull
+$ source ./venv/bin/activate
+$ (venv) alembic upgrade head
+```
+
+And that should bring both code and database into line with the master branch. **If you got the code before I was using alembic** then you first need to tell alembic to register the DB against the intial revision; run `alembic stamp 5d9f2ca7b98b` before attempting `alembic upgrade head` and all will be well.
+
 
 #### Automating things.
 

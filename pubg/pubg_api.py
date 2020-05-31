@@ -26,6 +26,7 @@ class pubg_api:
         self.player_names = config['players']
         self.matches = []
         self.player_season_stats = []
+        self.player_ranked_season_stats = []
         self.player_lifetime_stats = []
         self.players = []
 
@@ -168,6 +169,30 @@ class pubg_api:
         """
 
         return [season for season in self.seasons if season['attributes']['isCurrentSeason']]
+
+    def get_player_ranked_season_stats(self, combo):
+        """
+        Fetches the ranked player season stats. Combo is a tuple consisting of
+        (player_id, season_id).
+        """
+
+        module = '/players/{0}/seasons/{1}/ranked'.format(
+            combo[0],
+            combo[1]
+        )
+
+        r = self.invoke_rest_api(
+            url=self.base_url + self.shard.split('-')[0] + module,
+            headers=self.headers
+        )
+
+        logging.debug("get_player_ranked_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json()['data']['attributes']['rankedGameModeStats'], indent=4)))
+
+        self.player_ranked_season_stats.append(
+            r.json()['data']
+        )
+
+        return None
 
     def get_player_season_stats(self, combo):
         """
