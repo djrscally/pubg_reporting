@@ -177,9 +177,12 @@ def __sync(api, pubgdb):
     # Do the actual processing
     for combo in process_me:
         api.get_player_season_stats(combo)
+        api.get_player_ranked_season_stats(combo)
 
     logging.info("Beginning upsert_player_season_stats() call")
     pubgdb.upsert_player_season_stats(api.player_season_stats)
+    logging.info("Beginning upsert_player_ranked_season_stats() call")
+    pubgdb.upsert_player_ranked_season_stats(api.player_ranked_season_stats)
     logging.info("Beginning upsert_season_matches() call")
     pubgdb.upsert_season_matches(api.player_season_stats)
 

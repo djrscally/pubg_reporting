@@ -77,7 +77,7 @@ $ source ./venv/bin/activate
 $ (venv) alembic upgrade head
 ```
 
-And that should bring both code and database into line with the master branch
+And that should bring both code and database into line with the master branch. **If you got the code before I was using alembic** then you first need to tell alembic to register the DB against the intial revision; run `alembic stamp 5d9f2ca7b98b` before attempting `alembic upgrade head` and all will be well.
 
 
 #### Automating things.

@@ -14,10 +14,12 @@ from .model import\
     , PlayerMatches\
     , SeasonMatches\
     , PlayerSeasonStats\
+    , PlayerRankedSeasonStats\
     , PlayerLifetimeStats\
     , PlayerMatchStats
 from sqlalchemy.dialects.mysql import insert
 import logging
+import json
 
 class PUBGDatabaseConnector:
 
@@ -85,7 +87,7 @@ class PUBGDatabaseConnector:
                     ),
                     duration=match['attributes']['duration'],
                     gameMode=match['attributes']['gameMode'],
-                    matchType=match['attributes']['gameMode'],
+                    matchType=match['attributes']['matchType'],
                     mapName=match['attributes']['mapName'],
                     isCustomMatch=match['attributes']['isCustomMatch'],
                     seasonState=match['attributes']['seasonState'],
@@ -284,6 +286,102 @@ class PUBGDatabaseConnector:
                         continue
         except Exception as e:
             print(e)
+            trans.rollback()
+
+        conn.close()
+
+        return True
+
+    def upsert_player_ranked_season_stats(self, player_ranked_season_stats):
+        """
+        More irritatingly long-ass sql. Oh well; this is the version of upsert
+        player season stats that does the ranked version of the table.
+        """
+
+        conn = self.engine.connect()
+
+        try:
+            for player_ranked_season in player_ranked_season_stats:
+                for game_mode in player_ranked_season['attributes']['rankedGameModeStats'].keys():
+                    trans = conn.begin()
+
+                    insert_stmt = insert(PlayerRankedSeasonStats).values(
+                        player_id=player_ranked_season['relationships']['player']['data']['id'],
+                        season_id=player_ranked_season['relationships']['season']['data']['id'],
+                        game_mode=game_mode,
+                        currentRankPoint=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['currentRankPoint'],
+                        bestRankPoint=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['bestRankPoint'],
+                        currentTier_Tier=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['currentTier']['tier'],
+                        currentTier_subTier=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['currentTier']['subTier'],
+                        bestTier_Tier=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['bestTier']['tier'],
+                        bestTier_subTier=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['bestTier']['subTier'],
+                        roundsPlayed=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['roundsPlayed'],
+                        avgRank=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['avgRank'],
+                        avgSurvivalTime=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['avgSurvivalTime'],
+                        top10Ratio=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['top10Ratio'],
+                        winRatio=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['winRatio'],
+                        assists=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['assists'],
+                        wins=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['wins'],
+                        kda=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['kda'],
+                        kdr=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['kdr'],
+                        kills=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['kills'],
+                        deaths=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['deaths'],
+                        roundMostKills=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['roundMostKills'],
+                        longestKill=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['longestKill'],
+                        headshotKills=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['headshotKills'],
+                        headshotKillRatio=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['headshotKillRatio'],
+                        damageDealt=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['damageDealt'],
+                        dBNOs=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['dBNOs'],
+                        reviveRatio=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['reviveRatio'],
+                        revives=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['revives'],
+                        heals=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['heals'],
+                        boosts=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['boosts'],
+                        weaponsAcquired=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['weaponsAcquired'],
+                        teamKills=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['teamKills'],
+                        playTime=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['playTime'],
+                        killStreak=player_ranked_season['attributes']['rankedGameModeStats'][game_mode]['killStreak'],
+                    )
+
+                    merge_stmt = insert_stmt.on_duplicate_key_update(
+                        currentRankPoint=insert_stmt.inserted.currentRankPoint,
+                        bestRankPoint=insert_stmt.inserted.bestRankPoint,
+                        currentTier_Tier=insert_stmt.inserted.currentTier_Tier,
+                        currentTier_subTier=insert_stmt.inserted.currentTier_subTier,
+                        bestTier_Tier=insert_stmt.inserted.bestTier_Tier,
+                        bestTier_subTier=insert_stmt.inserted.bestTier_subTier,
+                        roundsPlayed=insert_stmt.inserted.roundsPlayed,
+                        avgRank=insert_stmt.inserted.avgRank,
+                        avgSurvivalTime=insert_stmt.inserted.avgSurvivalTime,
+                        top10Ratio=insert_stmt.inserted.top10Ratio,
+                        winRatio=insert_stmt.inserted.winRatio,
+                        assists=insert_stmt.inserted.assists,
+                        wins=insert_stmt.inserted.wins,
+                        kda=insert_stmt.inserted.kda,
+                        kdr=insert_stmt.inserted.kdr,
+                        kills=insert_stmt.inserted.kills,
+                        deaths=insert_stmt.inserted.deaths,
+                        roundMostKills=insert_stmt.inserted.roundMostKills,
+                        longestKill=insert_stmt.inserted.longestKill,
+                        headshotKills=insert_stmt.inserted.headshotKills,
+                        headshotKillRatio=insert_stmt.inserted.headshotKillRatio,
+                        damageDealt=insert_stmt.inserted.damageDealt,
+                        dBNOs=insert_stmt.inserted.dBNOs,
+                        reviveRatio=insert_stmt.inserted.reviveRatio,
+                        revives=insert_stmt.inserted.revives,
+                        heals=insert_stmt.inserted.heals,
+                        boosts=insert_stmt.inserted.boosts,
+                        weaponsAcquired=insert_stmt.inserted.weaponsAcquired,
+                        teamKills=insert_stmt.inserted.teamKills,
+                        playTime=insert_stmt.inserted.playTime,
+                        killStreak=insert_stmt.inserted.killStreak,
+                    )
+
+                    conn.execute(merge_stmt)
+                    trans.commit()
+                    
+        except Exception as e:
+            logging.error("Content of player_ranked_season_stats: {0}".format(json.dumps(player_ranked_season_stats, indent=4)))
+            logging.error("Exception Details: {0}".format(e))
             trans.rollback()
 
         conn.close()
