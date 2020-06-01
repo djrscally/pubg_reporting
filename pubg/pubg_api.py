@@ -159,7 +159,10 @@ class pubg_api:
             url=self.base_url + self.shard + module,
             headers=self.headers
         )
-        self.seasons = r.json()['data']
+        try:
+            self.seasons = r.json()['data']
+        except:
+            logging.exception('get_seasons: Append data to seasons')
 
         return None
 
@@ -188,9 +191,15 @@ class pubg_api:
 
         logging.debug("get_player_ranked_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json(), indent=4)))
 
-        self.player_ranked_season_stats.append(
-            r.json()['data']
-        )
+        if r.status_code == 200:
+            try:
+                self.player_ranked_season_stats.append(
+                    r.json()['data']
+                )
+            except:
+                logging.exception("get_player_ranked_season_stats: Error appending data to list")
+        else:
+            logging.debug("get_player_ranked_season_stats returned something other than HTTP 200")
 
         return None
 
@@ -224,12 +233,15 @@ class pubg_api:
 
         logging.debug("get_player_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json(), indent=4)))
 
-        self.player_season_stats.append(
-            r.json()['data']
-        )
-
-        # endpoint has a limit of 10 requests per minute
-        time.sleep(6)
+        if r.status_code == 200:
+            try:
+                self.player_season_stats.append(
+                    r.json()['data']
+                )
+            except:
+                logging.exception("get_player_season_stats: Error appending data to list")
+        else:
+            logging.debug("get_player_season_stats returned something other than HTTP 200")
 
         return None
 
@@ -253,10 +265,15 @@ class pubg_api:
                     headers=self.headers
                 )
 
-            self.player_lifetime_stats.append(
-                r.json()['data']
-            )
-            # endpoint has a limit of 10 requests per minute
-            time.sleep(6)
+            if r.status_code == 200:
+                try:
+                    self.player_lifetime_stats.append(
+                        r.json()['data']
+                    )
+                except:
+                    logging.exception("get_player_lifetime_stats: Error appending data to list")
+            else:
+                logging.debug("get_player_lifetime_stats returned something other than HTTP 200")
+
 
         return None
