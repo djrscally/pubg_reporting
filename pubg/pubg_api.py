@@ -221,15 +221,17 @@ class pubg_api:
                 url=self.base_url + self.shard + module,
                 headers=self.headers
             )
-
+        print (r.status_code)
         logging.debug("get_player_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json(), indent=4)))
 
-        self.player_season_stats.append(
-            r.json()['data']
-        )
+        ## Only allow Valid requests to be parsed
+        if r.status_code == 200:
+            self.player_season_stats.append(
+                r.json()['data']
+            )
 
         # endpoint has a limit of 10 requests per minute
-        time.sleep(6)
+        time.sleep(7)
 
         return None
 
@@ -257,6 +259,6 @@ class pubg_api:
                 r.json()['data']
             )
             # endpoint has a limit of 10 requests per minute
-            time.sleep(6)
+            time.sleep(7)
 
         return None
