@@ -186,7 +186,7 @@ class pubg_api:
             headers=self.headers
         )
 
-        logging.debug("get_player_ranked_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json()['data']['attributes']['rankedGameModeStats'], indent=4)))
+        logging.debug("get_player_ranked_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json(), indent=4)))
 
         self.player_ranked_season_stats.append(
             r.json()['data']
@@ -222,7 +222,7 @@ class pubg_api:
                 headers=self.headers
             )
 
-        logging.debug("get_player_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json()['data']['attributes']['gameModeStats'], indent=4)))
+        logging.debug("get_player_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json(), indent=4)))
 
         self.player_season_stats.append(
             r.json()['data']
