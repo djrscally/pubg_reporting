@@ -221,7 +221,7 @@ class pubg_api:
                 url=self.base_url + self.shard + module,
                 headers=self.headers
             )
-        print (r.status_code)
+        
         logging.debug("get_player_season_stats: {0}: {1}: {2}".format(combo[0], combo[1], json.dumps(r.json(), indent=4)))
 
         ## Only allow Valid requests to be parsed
