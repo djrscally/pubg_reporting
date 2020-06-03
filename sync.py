@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from database.model import Base, Player, PlayerSeasonStats, Match, SystemInformation
+from database.model import *
 from database.api import PUBGDatabaseConnector
 from pubg.pubg_api import pubg_api
 import json
@@ -24,26 +24,20 @@ from config.config import cli
     help='Echo SQL Alchemy output to stdout'
 )
 @click.option(
-    '--build-only',
-    'buildonly',
-    is_flag=True,
-    help='Set flag to only build the database structure but not perform a sync'
-)
-@click.option(
     '--config',
     'config',
     is_flag=True,
     default=False,
     help='Set the config flag to enter the administration cli. The sync will NOT be ran.'
 )
-def sync(loglevel, echo, buildonly, config):
+def sync(loglevel, echo, config):
     """
     Program to sync data from the Player Unknown Battlegrounds API into a MySQL
     database, for analysis and pretty nerd graphs.
     """
 
     numeric_level = getattr(logging, loglevel.upper(), None)
-    logging.basicConfig(filename='sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')
+    logging.basicConfig(filename=os.environ.get('PUBGDB_CONFIG_PATH') + 'sync.log', filemode='w', level=numeric_level, format='%(asctime)s:%(levelname)s:%(message)s')
     # Turn SQL Alchemy logging to the entered value
     logging.getLogger('sqlalchemy.engine').setLevel(logging.getLevelName(loglevel))
     logging.getLogger('sqlalchemy.dialects').setLevel(logging.getLevelName(loglevel))
@@ -58,14 +52,13 @@ def sync(loglevel, echo, buildonly, config):
         #db_uri = 'sqlite:///:memory:'
 
     pubgdb = PUBGDatabaseConnector(db_uri, echo)
-    Base.metadata.create_all(pubgdb.engine)
 
     config = json.load(open(os.environ.get('PUBGDB_CONFIG_PATH') + 'config.json'))
     api = pubg_api(config)
 
     if config:
         cli(pubgdb)
-    if (not buildonly) and (not config):
+    else:
         __sync(api, pubgdb)
 
 def __sync(api, pubgdb):
@@ -88,6 +81,20 @@ def __sync(api, pubgdb):
 
     logging.info("Beginning get_players() call")
     api.get_players()
+
+    # We want to record the IDs of NEW players (I.E. those not yet present in the database) for 
+    # use later on.
+
+    sess = pubgdb.Session()
+
+    new_players = []
+
+    for p in api.players:
+        if sess.query(Player).filter_by(player_id=p['id']).one_or_none() is None:
+            new_players.append(p['id'])
+
+    sess.close()
+
     logging.info("Beginning upsert_players() call")
     pubgdb.upsert_players(api.players)
 
@@ -99,8 +106,8 @@ def __sync(api, pubgdb):
     logging.info("Beginning get_matches() call")
 
     # get_matches is slow because it syncs a lot. We're going to check the database
-    # to only make calls for matches that we don't already hold data for (since those)
-    # data will never change after the fact. Additionally, we need to make sure we 
+    # to only make calls for matches that we don't already hold data for (since those
+    # data will never change after the fact). Additionally, we need to make sure we 
     # only sync each match a single time.
 
     sess = pubgdb.Session()
@@ -109,9 +116,9 @@ def __sync(api, pubgdb):
 
     for player in api.players:
         for match in player['relationships']['matches']['data']:
-            q = sess.query(Match).filter_by(match_id=match['id'])
+            q = sess.query(PlayerMatchStats).filter_by(player_id=player['id'], match_id=match['id'])
             # If we already added it, or it already exists in the database
-            if (match['id'] in process_matches) or (sess.query(q.exists()).one()[0]):
+            if (match['id'] in process_matches) or (q.one_or_none() is not None):
                 continue
             else:
                 process_matches.append(match['id'])
@@ -141,17 +148,18 @@ def __sync(api, pubgdb):
 
     sess.close()
 
-    # Next, build a list of players who've played since the last sync
-    # [season for season in self.seasons if season['attributes']['isCurrentSeason']]
+    # Next, build a list of players who've played since the last sync or are new
 
-    process_players = []
+    process_players = [] + new_players
 
     for p in api.players:
         if len(p['relationships']['matches']['data']) > 0:
             if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime:
                 process_players.append(p['id'])
     
-#    process_players = [p['id'] for p in api.players if max([match_datetimes[m['id']] for m in p['relationships']['matches']['data']]) >= last_sync_datetime]
+    # dedupedeloopwoop
+    process_players = list(set(process_players))
+
     # Get the current season, and add in a player-season combo for all players for the
     # current season to the process list
     current_season_id = api.get_current_season()[0]['id']
@@ -180,9 +188,12 @@ def __sync(api, pubgdb):
     # Do the actual processing
     for combo in process_me:
         api.get_player_season_stats(combo)
+        api.get_player_ranked_season_stats(combo)
 
     logging.info("Beginning upsert_player_season_stats() call")
     pubgdb.upsert_player_season_stats(api.player_season_stats)
+    logging.info("Beginning upsert_player_ranked_season_stats() call")
+    pubgdb.upsert_player_ranked_season_stats(api.player_ranked_season_stats)
     logging.info("Beginning upsert_season_matches() call")
     pubgdb.upsert_season_matches(api.player_season_stats)
 
