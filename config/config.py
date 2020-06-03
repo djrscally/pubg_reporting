@@ -7,11 +7,11 @@ import os
 def add_player(db):
 
     player = input("Player IGN: ")
-    shard = input("Shard: ")
+    shard = input("Shard (including region if applicable e.g 'xbox-eu'): ")
 
     confirmation = input("\nYou entered {0} ({1}), is that correct? [Y/N]: ".format(player, shard))
 
-    if confirmation == 'Y':
+    if (confirmation == 'Y') | (confirmation == 'y'):
         sess = db.Session()
         p = SyncPlayers(player_ign=player, shard=shard)
         sess.add(p)
@@ -27,6 +27,7 @@ def add_player(db):
 def list_players(db):
     sess = db.Session()
 
+    print("Player IGN", "Shard")
     for p in sess.query(SyncPlayers).all():
         print(p.player_ign, p.shard)
 
