@@ -3,6 +3,7 @@ from consolemenu.format import *
 from consolemenu.items import *
 from database.model import SyncPlayers
 import os
+import json
 
 def add_player(db):
 
@@ -35,6 +36,11 @@ def list_players(db):
 
     return
 
+def import_config():
+    config = json.loads(open(os.environ.get('PUBGDB_CONFIG_PATH') + 'sync.log', 'r').read())
+
+    
+
 def cli(db):
 
     # Menu formatting
@@ -65,6 +71,9 @@ def cli(db):
 
     list_players_itm = FunctionItem("List existing players", list_players, [db])
     pm_menu.append_item(list_players_itm)
+
+    import_config_itm = FunctionItem("Import config.json file", import_config, [db])
+    pm_menu.append_item(import_config_itm)
 
     pm_menu_item = SubmenuItem("Player Management", submenu=pm_menu)
 
